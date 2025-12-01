@@ -265,17 +265,7 @@ app.prepare().then(() => {
       const isCurrentPlayer = gameState.players[gameState.currentPlayerIndex]?.id === socket.id;
       if (!isCurrentPlayer) return;
 
-      // Revelar próxima dica sequencial E passar a vez
-      if (gameState.revealedClueIndices.length < 10) {
-        // Encontrar próxima dica não revelada
-        let nextClue = 0;
-        while (nextClue < 10 && gameState.revealedClueIndices.includes(nextClue)) {
-          nextClue++;
-        }
-        if (nextClue < 10) {
-          gameState.revealedClueIndices.push(nextClue);
-        }
-      }
+      // NÃO revelar dica - apenas passar a vez
 
       // Resetar flag de revelação (novo turno)
       gameState.hasRevealedThisTurn = false;
@@ -292,7 +282,7 @@ app.prepare().then(() => {
         currentPlayerIndex: gameState.currentPlayerIndex,
       });
 
-      console.log(`Próxima dica revelada (total: ${gameState.revealedClueIndices.length}). Próximo jogador: ${gameState.players[gameState.currentPlayerIndex]?.name}`);
+      console.log(`${player.name} passou a vez. Próximo jogador: ${gameState.players[gameState.currentPlayerIndex]?.name}`);
     });
 
     // Enviar resposta

@@ -615,7 +615,7 @@ export default function GamePage() {
                 onClick={handleRevealClue}
                 className="w-full mb-4 bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg"
               >
-                ⏭️ Passar a Vez (Revela próxima dica sequencial)
+                ⏭️ Passar a Vez
               </button>
             )}
 
