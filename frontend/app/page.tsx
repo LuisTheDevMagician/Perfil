@@ -5,6 +5,14 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Socket } from 'socket.io-client';
 import { getSocket, getSessionId } from '@/lib/socket';
+import CasinoIcon from '@mui/icons-material/Casino';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import GroupIcon from '@mui/icons-material/Group';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import SortIcon from '@mui/icons-material/Sort';
+import StarIcon from '@mui/icons-material/Star';
+import InfoIcon from '@mui/icons-material/Info';
+import PersonIcon from '@mui/icons-material/Person';
 
 interface Player {
   id: string;
@@ -181,8 +189,8 @@ export default function Home() {
           </div>
 
           <div className="mt-6 text-center text-sm text-gray-600">
-            <p>🎲 Primeiro jogador será o HOST</p>
-            <p>🎯 Acesse em outros dispositivos na mesma rede</p>
+            <p><CasinoIcon /> Primeiro jogador será o HOST</p>
+            <p><EmojiEventsIcon /> Acesse em outros dispositivos na mesma rede</p>
           </div>
         </div>
       </div>
@@ -197,14 +205,14 @@ export default function Home() {
             Lobby do Jogo
           </h1>
           <p className="text-center text-gray-600 mb-6">
-            {currentPlayer?.isHost && <span className="text-purple-600 font-bold">👑 Você é o HOST!</span>}
+            {currentPlayer?.isHost && <span className="text-purple-600 font-bold"><StarIcon className="mr-1" /> Você é o HOST!</span>}
             {!currentPlayer?.isHost && <span>Aguarde o HOST iniciar a partida</span>}
           </p>
 
           {/* Lista de Jogadores */}
           <div className="bg-gray-50 rounded-xl p-4 mb-6">
-            <h2 className="text-xl font-bold mb-4 text-gray-800">
-              Jogadores Conectados ({players.length}/11)
+            <h2 className="text-xl font-bold mb-4 text-gray-800 flex items-center gap-2">
+              <GroupIcon /> Jogadores Conectados ({players.length}/11)
             </h2>
             <div className="space-y-2">
               {players.map((player) => (
@@ -217,17 +225,17 @@ export default function Home() {
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    {player.isHost && <span className="text-xl">👑</span>}
+                    {player.isHost && <StarIcon className="text-xl text-yellow-500" />}
                     <span className={`font-semibold ${player.isHost ? 'text-green-600' : 'text-gray-800'}`}>{player.name}</span>
                     {player.id === currentPlayer?.id && (
-                      <span className="text-sm text-purple-600">(Você)</span>
+                      <span className="text-sm text-purple-600">(<PersonIcon /> Você)</span>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
                     {player.isHost ? (
                       <span className="text-sm text-green-600 font-bold">Mestre</span>
                     ) : player.diceRoll !== null ? (
-                      <span className={`text-2xl font-bold ${player.id === currentPlayer?.id ? 'text-green-600' : 'text-gray-800'}`}>🎲 {player.diceRoll}</span>
+                      <span className={`text-2xl font-bold ${player.id === currentPlayer?.id ? 'text-green-600' : 'text-gray-800'}`}><CasinoIcon /> {player.diceRoll}</span>
                     ) : (
                       <span className="text-gray-400 text-sm">Aguardando...</span>
                     )}
@@ -243,9 +251,9 @@ export default function Home() {
             {currentPlayer?.isHost === false && currentPlayer?.diceRoll === null && (
               <button
                 onClick={handleRollDice}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg flex items-center justify-center gap-2"
               >
-                🎲 Rolar Dados
+                <CasinoIcon /> Rolar Dados
               </button>
             )}
 
@@ -255,17 +263,17 @@ export default function Home() {
                 {allPlayersRolled && (
                   <button
                     onClick={handleSetPlayOrder}
-                    className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg"
+                    className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg flex items-center justify-center gap-2"
                   >
-                    📋 Definir Ordem de Jogo
+                    <SortIcon /> Definir Ordem de Jogo
                   </button>
                 )}
                 
                 <button
                   onClick={handleStartGame}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg"
+                  className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg flex items-center justify-center gap-2"
                 >
-                  🎮 Iniciar Partida
+                  <PlayArrowIcon /> Iniciar Partida
                 </button>
               </>
             )}
@@ -273,7 +281,7 @@ export default function Home() {
 
           {/* Instruções */}
           <div className="mt-6 bg-blue-50 rounded-lg p-4 text-sm text-gray-700">
-            <h3 className="font-bold mb-2">📖 Como Jogar:</h3>
+            <h3 className="font-bold mb-2 flex items-center gap-1"><InfoIcon /> Como Jogar:</h3>
             <ol className="list-decimal list-inside space-y-1">
               <li>Cada jogador rola os dados para definir a ordem</li>
               <li>HOST inicia a partida quando todos estiverem prontos</li>

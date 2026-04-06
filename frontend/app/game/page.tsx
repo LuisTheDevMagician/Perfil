@@ -6,6 +6,26 @@ import { useRouter } from 'next/navigation';
 import { Socket } from 'socket.io-client';
 import { getSocket, getSessionId } from '@/lib/socket';
 import { Card } from '@/lib/cards';
+import CasinoIcon from '@mui/icons-material/Casino';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import StarIcon from '@mui/icons-material/Star';
+import LockIcon from '@mui/icons-material/Lock';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import ExitToAppIcon from '@mui/icons-material/ExitToApp';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import CheckIcon from '@mui/icons-material/Check';
+import SendIcon from '@mui/icons-material/Send';
+import TimerIcon from '@mui/icons-material/Timer';
+import SportsScoreIcon from '@mui/icons-material/SportsScore';
+import MilitaryTechIcon from '@mui/icons-material/MilitaryTech';
+import PersonIcon from '@mui/icons-material/Person';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import WhatshotIcon from '@mui/icons-material/Whatshot';
+import GroupIcon from '@mui/icons-material/Group';
 
 interface Player {
   id: string;
@@ -300,10 +320,10 @@ export default function GamePage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full">
-          <h1 className="text-4xl font-bold text-center mb-6 text-gray-800">🏆 Fim de Jogo!</h1>
+          <h1 className="text-4xl font-bold text-center mb-6 text-gray-800"><EmojiEventsIcon className="mr-2" /> Fim de Jogo!</h1>
           
           <div className="bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-xl p-6 mb-6">
-            <h2 className="text-2xl font-bold text-center text-white mb-2">🥇 Vencedor</h2>
+            <h2 className="text-2xl font-bold text-center text-white mb-2"><MilitaryTechIcon /> Vencedor</h2>
             <p className="text-3xl font-bold text-center text-white">{rankingOrdenado[0]?.name}</p>
             <p className="text-xl text-center text-white mt-2">{rankingOrdenado[0]?.score} pontos</p>
           </div>
@@ -333,15 +353,15 @@ export default function GamePage() {
             <div className="flex gap-3">
               <button
                 onClick={handleRestartGame}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg"
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg flex items-center justify-center gap-2"
               >
-                🔄 Jogar Novamente
+                <RefreshIcon /> Jogar Novamente
               </button>
               <button
                 onClick={handleExitVictoryScreen}
-                className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg"
+                className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg flex items-center justify-center gap-2"
               >
-                🚪 Sair para o Lobby
+                <ExitToAppIcon /> Sair para o Lobby
               </button>
             </div>
           )}
@@ -372,7 +392,7 @@ export default function GamePage() {
           {/* Cabeçalho */}
           <div className="bg-white rounded-xl shadow-lg p-4">
             <h1 className="text-2xl font-bold text-center text-gray-800">
-              👑 Visão do HOST
+              <StarIcon className="mr-2" /> Visão do HOST
             </h1>
           </div>
 
@@ -404,18 +424,18 @@ export default function GamePage() {
               {revealedClueIndices.length >= 10 ? (
                 <button
                   onClick={handleRevealAnswer}
-                  className="w-full mt-4 bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg"
+                  className="w-full mt-4 bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg flex items-center justify-center gap-2"
                 >
-                  📖 Revelar Resposta e Passar
+                  <MenuBookIcon /> Revelar Resposta e Passar
                 </button>
               ) : (
                 <button
                   onClick={handleRevealClue}
                   disabled={true}
-                  className="w-full mt-4 bg-gray-400 text-white font-bold py-3 px-6 rounded-lg cursor-not-allowed"
+                  className="w-full mt-4 bg-gray-400 text-white font-bold py-3 px-6 rounded-lg cursor-not-allowed flex items-center justify-center gap-2"
                   title="Host não pode revelar dicas. Apenas o jogador da vez pode passar para a próxima dica."
                 >
-                  🚫 Host não revela dicas
+                  <StarIcon /> Host não revela dicas
                 </button>
               )}
             </div>
@@ -425,7 +445,7 @@ export default function GamePage() {
               {/* Card do Host */}
               <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl shadow-lg p-4">
                 <h3 className="text-lg font-bold mb-2 text-white flex items-center gap-2">
-                  👑 Mestre da Partida
+                  <StarIcon /> Mestre da Partida
                 </h3>
                 {players.filter(p => p.isHost).map((host) => (
                   <div key={host.id} className="bg-white bg-opacity-20 backdrop-blur-sm rounded-lg p-3">
@@ -439,7 +459,7 @@ export default function GamePage() {
 
               {/* Placar - Apenas Jogadores */}
               <div className="bg-white rounded-xl shadow-lg p-4">
-                <h3 className="text-lg font-bold mb-3 text-gray-800">Placar</h3>
+                <h3 className="text-lg font-bold mb-3 text-gray-800 flex items-center gap-2"><SportsScoreIcon /> Placar</h3>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {players.filter(p => !p.isHost).map((player) => {
                     const playerIndex = players.findIndex(p => p.id === player.id);
@@ -452,8 +472,8 @@ export default function GamePage() {
                             : 'bg-gray-50 border border-gray-200'
                         }`}
                       >
-                        <span className="font-semibold text-gray-800">
-                          {playerIndex === currentPlayerIndex && '▶️ '}
+                        <span className="font-semibold text-gray-800 flex items-center gap-1">
+                          {playerIndex === currentPlayerIndex && <NavigateNextIcon className="text-green-600" />}
                           {player.name}
                         </span>
                         <span className="font-bold text-gray-700">{player.score} pts</span>
@@ -481,15 +501,15 @@ export default function GamePage() {
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleValidateAnswer(answer.id, true)}
-                            className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                            className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-1"
                           >
-                            ✓ Correto
+                            <CheckIcon /> Correto
                           </button>
                           <button
                             onClick={() => handleValidateAnswer(answer.id, false)}
-                            className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                            className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-1"
                           >
-                            ✗ Errado
+                            <CancelIcon /> Errado
                           </button>
                         </div>
                       </div>
@@ -518,8 +538,8 @@ export default function GamePage() {
         {showCorrectAnswer && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md mx-4 animate-bounce">
-              <h2 className="text-3xl font-bold text-center text-green-600 mb-4">
-                ✓ CORRETO!
+              <h2 className="text-3xl font-bold text-center text-green-600 mb-4 flex items-center justify-center gap-2">
+                <CheckCircleIcon fontSize="inherit" /> CORRETO!
               </h2>
               <p className="text-xl text-center text-gray-700 mb-2">
                 <strong>{winnerName}</strong> acertou!
@@ -565,10 +585,16 @@ export default function GamePage() {
           <h1 className="text-2xl font-bold text-center text-gray-800">
             Jogo Perfil
           </h1>
-          <p className="text-center text-gray-600">
-            Vez de: <strong>{currentPlayer?.name}</strong>
-            {isMyTurn && <span className="text-green-600 ml-2">🎯 É sua vez!</span>}
-          </p>
+          <div className="flex justify-between items-center mt-2">
+            <span className="text-gray-600">
+              Vez de: <strong>{currentPlayer?.name}</strong>
+            </span>
+            {isMyTurn && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-600 text-white font-bold border-2 border-green-800">
+                <WhatshotIcon /> É sua vez!
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="grid md:grid-cols-3 gap-4">
@@ -577,7 +603,7 @@ export default function GamePage() {
             {/* Card do Host */}
             <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl shadow-lg p-4">
               <h3 className="text-lg font-bold mb-2 text-white flex items-center gap-2">
-                👑 Mestre
+                <StarIcon /> Mestre
               </h3>
               {players.filter(p => p.isHost).map((host) => (
                 <div key={host.id} className="bg-white bg-opacity-20 backdrop-blur-sm rounded-lg p-3">
@@ -591,7 +617,7 @@ export default function GamePage() {
 
             {/* Placar - Apenas Jogadores */}
             <div className="bg-white rounded-xl shadow-lg p-4">
-              <h3 className="text-lg font-bold mb-3 text-gray-800">Jogadores</h3>
+              <h3 className="text-lg font-bold mb-3 text-gray-800 flex items-center gap-2"><GroupIcon /> Jogadores</h3>
               <div className="space-y-2">
                 {players.filter(p => !p.isHost).map((player) => {
                   const playerIndex = players.findIndex(p => p.id === player.id);
@@ -606,8 +632,8 @@ export default function GamePage() {
                           : 'bg-gray-50 border border-gray-200'
                       }`}
                     >
-                      <span className="font-semibold text-gray-800 text-sm">
-                        {playerIndex === currentPlayerIndex && '▶️ '}
+                      <span className="font-semibold text-gray-800 text-sm flex items-center gap-1">
+                        {playerIndex === currentPlayerIndex && <NavigateNextIcon className="text-green-600" />}
                         {player.name}
                         {player.id === myId && ' (Você)'}
                       </span>
@@ -649,9 +675,9 @@ export default function GamePage() {
                         <span className="text-gray-800">{dica}</span>
                       </>
                     ) : canReveal ? (
-                      <span className="text-yellow-700 font-semibold">🔓 Clique para revelar a dica {index + 1}</span>
+                      <span className="text-yellow-700 font-semibold flex items-center gap-1"><VisibilityIcon fontSize="small" /> Clique para revelar a dica {index + 1}</span>
                     ) : (
-                      <span className="text-gray-500">🔒 Dica bloqueada</span>
+                      <span className="text-gray-500 flex items-center gap-1"><VisibilityOffIcon fontSize="small" /> Dica bloqueada</span>
                     )}
                   </div>
                 );
@@ -661,8 +687,8 @@ export default function GamePage() {
             {/* Mensagem informativa */}
             {isMyTurn && revealedClueIndices.length < 10 && answers.length === 0 && (
               <div className="mb-4 p-3 bg-blue-50 border border-blue-300 rounded-lg">
-                <p className="text-blue-800 text-center text-sm font-medium">
-                  👆 Clique em uma dica amarela para revelá-la ou passe a vez
+                <p className="text-blue-800 text-center text-sm font-medium flex items-center justify-center gap-1">
+                  <VisibilityIcon fontSize="small" /> Clique em uma dica amarela para revelá-la ou passe a vez
                 </p>
               </div>
             )}
@@ -670,8 +696,8 @@ export default function GamePage() {
             {/* Mensagem de aguardando validação */}
             {isMyTurn && answers.length > 0 && (
               <div className="mb-4 p-3 bg-orange-50 border border-orange-300 rounded-lg">
-                <p className="text-orange-800 text-center text-sm font-medium">
-                  ⏳ Aguarde o host validar as respostas para continuar
+                <p className="text-orange-800 text-center text-sm font-medium flex items-center justify-center gap-1">
+                  <TimerIcon fontSize="small" /> Aguarde o host validar as respostas para continuar
                 </p>
               </div>
             )}
@@ -680,9 +706,9 @@ export default function GamePage() {
             {isMyTurn && revealedClueIndices.length < 10 && (
               <button
                 onClick={handleRevealClue}
-                className="w-full mb-4 bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg"
+                className="w-full mb-4 bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg flex items-center justify-center gap-2"
               >
-                ⏭️ Passar a Vez
+                <NavigateNextIcon /> Passar a Vez
               </button>
             )}
 
@@ -700,9 +726,10 @@ export default function GamePage() {
               <button
                 onClick={handleSubmitAnswer}
                 disabled={!playerAnswer.trim() || showCorrectAnswer || hasAnswered || isSubmitting || !isMyTurn}
-                className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg disabled:cursor-not-allowed"
+                className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {hasAnswered ? '✓ Resposta Enviada' : isSubmitting ? '⏳ Enviando...' : !isMyTurn ? '🔒 Aguarde sua vez' : '📤 Enviar Resposta'}
+                {hasAnswered ? <CheckIcon /> : isSubmitting ? <TimerIcon /> : !isMyTurn ? <LockIcon /> : <SendIcon />}
+                {hasAnswered ? 'Resposta Enviada' : isSubmitting ? 'Enviando...' : !isMyTurn ? 'Aguarde sua vez' : 'Enviar Resposta'}
               </button>
             </div>
           </div>
@@ -713,8 +740,8 @@ export default function GamePage() {
       {showCorrectAnswer && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md mx-4 animate-bounce">
-            <h2 className="text-3xl font-bold text-center text-green-600 mb-4">
-              ✓ CORRETO!
+            <h2 className="text-3xl font-bold text-center text-green-600 mb-4 flex items-center justify-center gap-2">
+              <CheckCircleIcon fontSize="inherit" /> CORRETO!
             </h2>
             <p className="text-xl text-center text-gray-700 mb-2">
               <strong>{winnerName}</strong> acertou!
@@ -730,8 +757,8 @@ export default function GamePage() {
       {showErrorAnswer && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md mx-4 animate-bounce">
-            <h2 className="text-3xl font-bold text-center text-red-600 mb-4">
-              ✗ ERRADO!
+            <h2 className="text-3xl font-bold text-center text-red-600 mb-4 flex items-center justify-center gap-2">
+              <CancelIcon fontSize="inherit" /> ERRADO!
             </h2>
             <p className="text-xl text-center text-gray-700 mb-2">
               <strong>{errorPlayerName}</strong> errou!

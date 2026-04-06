@@ -33,6 +33,10 @@ yarn-error.log*
 # vercel
 .vercel
 
+# sqlite temporary files
+*.db-wal
+*.db-shm
+
 **/*.trace
 **/*.zip
 **/*.tar.gz
