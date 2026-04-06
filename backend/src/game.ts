@@ -174,6 +174,7 @@ export class GerenciadorJogo {
     const jogador = this.getJogadorPorSocket(idSocket);
     if (!jogador || jogador.e_host) return false;
     if (typeof rolagem !== 'number' || rolagem < 1 || rolagem > 100) return false;
+    if (jogador.rolagem_dado !== null) return false;
     
     jogador.rolagem_dado = rolagem;
     queries.atualizarJogador(jogador.id, { rolagemDado: rolagem });
