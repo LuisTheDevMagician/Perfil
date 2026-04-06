@@ -22,6 +22,7 @@ export const queries = {
     dicasReveladas?: string;
     idJogadorAtual?: number;
     estaAtiva?: number;
+    revelouEstaTurno?: number;
   }) => {
     const sets: string[] = [];
     const values: any[] = [];
@@ -41,6 +42,10 @@ export const queries = {
     if (data.estaAtiva !== undefined) {
       sets.push('esta_ativa = ?');
       values.push(data.estaAtiva);
+    }
+    if (data.revelouEstaTurno !== undefined) {
+      sets.push('revelou_esta_turno = ?');
+      values.push(data.revelouEstaTurno);
     }
     
     values.push(id);

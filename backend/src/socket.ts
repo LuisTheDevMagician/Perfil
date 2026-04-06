@@ -47,10 +47,6 @@ export function initSocket(httpServer: any) {
           return;
         }
 
-        if (gerenciadorJogo.getJogoIniciado()) {
-          gerenciadorJogo.resetarEstadoTurno();
-        }
-
         socket.emit('joined-lobby', { 
           player: mapJogadorParaFrontend(jogador), 
           players: gerenciadorJogo.getJogadores(getSocketIdsAtivos()).map(mapJogadorParaFrontend)
@@ -65,17 +61,37 @@ export function initSocket(httpServer: any) {
 
     socket.on('request-game-state', () => {
       try {
+        if (gerenciadorJogo.getJogoEncerrado()) {
+          socket.emit('victory-state', {
+            ranking: gerenciadorJogo.obterRankingFinal().map(j => ({
+              id: j.id_socket,
+              name: j.nome_jogador,
+              score: j.pontuacao,
+            }))
+          });
+          return;
+        }
+        
         if (gerenciadorJogo.getJogoIniciado()) {
           socket.emit('game-started', {
             currentCard: gerenciadorJogo.getCartaAtual(),
             currentPlayerIndex: getIndiceJogadorTurno(),
+            currentPlayerId: getIdJogadorTurno(),
             players: gerenciadorJogo.getJogadores(getSocketIdsAtivos()).map(mapJogadorParaFrontend),
           });
 
-          if (gerenciadorJogo.getDicasReveladas().length > 0) {
+          const dicasReveladas = gerenciadorJogo.getDicasReveladas();
+          if (dicasReveladas.length > 0) {
             socket.emit('clue-revealed', {
-              revealedClueIndices: gerenciadorJogo.getDicasReveladas(),
+              revealedClueIndices: dicasReveladas,
               currentPlayerIndex: getIndiceJogadorTurno(),
+              currentPlayerId: getIdJogadorTurno(),
+            });
+          } else {
+            socket.emit('clue-revealed', {
+              revealedClueIndices: [],
+              currentPlayerIndex: getIndiceJogadorTurno(),
+              currentPlayerId: getIdJogadorTurno(),
             });
           }
         }
@@ -123,6 +139,7 @@ export function initSocket(httpServer: any) {
         io.emit('game-started', {
           currentCard: gerenciadorJogo.getCartaAtual(),
           currentPlayerIndex: getIndiceJogadorTurno(),
+          currentPlayerId: getIdJogadorTurno(),
           players: gerenciadorJogo.getJogadores(getSocketIdsAtivos()).map(mapJogadorParaFrontend),
         });
       } catch (error: any) {
@@ -145,6 +162,7 @@ export function initSocket(httpServer: any) {
           io.emit('clue-revealed', {
             revealedClueIndices: gerenciadorJogo.getDicasReveladas(),
             currentPlayerIndex: getIndiceJogadorTurno(),
+            currentPlayerId: getIdJogadorTurno(),
           });
         }
       } catch (error: any) {
@@ -155,11 +173,14 @@ export function initSocket(httpServer: any) {
 
     socket.on('pass-turn', () => {
       try {
+        console.log('📨 Recebido pass-turn de:', socket.id);
         const sucesso = gerenciadorJogo.passarVez(socket.id);
+        console.log('📊 Resultado passarVez:', sucesso, 'currentPlayerIndex:', getIndiceJogadorTurno());
         if (sucesso) {
           io.emit('clue-revealed', {
             revealedClueIndices: gerenciadorJogo.getDicasReveladas(),
             currentPlayerIndex: getIndiceJogadorTurno(),
+            currentPlayerId: getIdJogadorTurno(),
           });
         }
       } catch (error: any) {
@@ -181,7 +202,13 @@ export function initSocket(httpServer: any) {
         if (resp) {
           const host = gerenciadorJogo.getJogadores(getSocketIdsAtivos()).find(j => j.e_host);
           if (host) {
-            io.to(host.id_socket).emit('new-answer', resp);
+            io.to(host.id_socket).emit('new-answer', {
+              id: resp.id,
+              playerId: socket.id,
+              playerName: resp.nome_jogador,
+              answer: resp.resposta,
+              timestamp: Date.now()
+            });
           }
         }
       } catch (error: any) {
@@ -192,12 +219,16 @@ export function initSocket(httpServer: any) {
 
     socket.on('validate-answer', (data: unknown) => {
       try {
+        console.log('📨 Recebido validate-answer:', JSON.stringify(data));
+        
         if (!data || typeof data !== 'object') {
           socket.emit('error', { message: 'Dados inválidos' });
           return;
         }
         
         const { answerId, isCorrect, casesToMove } = data as any;
+        
+        console.log('📋 Parsed data:', { answerId, isCorrect, casesToMove });
         
         if (typeof answerId !== 'number' || answerId < 1) {
           socket.emit('error', { message: 'ID de resposta inválido' });
@@ -216,6 +247,7 @@ export function initSocket(httpServer: any) {
         }
 
         const resultado = gerenciadorJogo.validarResposta(answerId, isCorrect, casasValidas);
+        console.log('📊 Resultado da validação:', resultado);
         
         if (resultado.sucesso) {
           if (isCorrect && resultado.nomeJogador) {
@@ -223,6 +255,7 @@ export function initSocket(httpServer: any) {
               playerName: resultado.nomeJogador,
               correctAnswer: resultado.respostaCorreta,
               casesToMove: casasValidas,
+              currentPlayerId: getIdJogadorTurno(),
               players: gerenciadorJogo.getJogadores(getSocketIdsAtivos()).map(mapJogadorParaFrontend),
             });
 
@@ -231,17 +264,27 @@ export function initSocket(httpServer: any) {
                 io.emit('next-card', {
                   currentCard: gerenciadorJogo.getCartaAtual(),
                   currentPlayerIndex: getIndiceJogadorTurno(),
+                  currentPlayerId: getIdJogadorTurno(),
                 });
               }
             }, 3000);
           } else {
+            console.log('❌ Enviando answer-incorrect com nextPlayerIndex:', getIndiceJogadorTurno());
             io.emit('answer-incorrect', {
               playerName: gerenciadorJogo.getRespostas().find(r => r.id === answerId)?.nome_jogador,
-              nextPlayerIndex: getIndiceJogadorTurno()
+              nextPlayerIndex: getIndiceJogadorTurno(),
+              nextPlayerId: getIdJogadorTurno()
             });
           }
 
-          io.emit('answers-updated', gerenciadorJogo.getRespostas());
+          const respostasAtuais = gerenciadorJogo.getRespostas();
+          io.emit('answers-updated', respostasAtuais.map(r => ({
+            id: r.id,
+            playerId: '',
+            playerName: r.nome_jogador,
+            answer: r.resposta,
+            timestamp: new Date(r.data_envio).getTime()
+          })));
         }
       } catch (error: any) {
         console.error('Erro em validate-answer:', error.message);
@@ -260,6 +303,7 @@ export function initSocket(httpServer: any) {
               io.emit('next-card', {
                 currentCard: gerenciadorJogo.getCartaAtual(),
                 currentPlayerIndex: getIndiceJogadorTurno(),
+                currentPlayerId: getIdJogadorTurno(),
               });
             }
           }, 3000);
@@ -278,6 +322,19 @@ export function initSocket(httpServer: any) {
         io.emit('game-restarted', gerenciadorJogo.getJogadores(getSocketIdsAtivos()).map(mapJogadorParaFrontend));
       } catch (error: any) {
         console.error('Erro em restart-game:', error.message);
+      }
+    });
+
+    socket.on('exit-victory-screen', () => {
+      try {
+        const jogador = gerenciadorJogo.getJogadorPorSocket(socket.id);
+        if (!jogador || !jogador.e_host) return;
+
+        gerenciadorJogo.sairDaTelaDeVitoria();
+        io.emit('lobby-cleared');
+        console.log('👋 Host saiu da tela de vitória - lobby resetado');
+      } catch (error: any) {
+        console.error('Erro em exit-victory-screen:', error.message);
       }
     });
 
@@ -300,7 +357,13 @@ export function initSocket(httpServer: any) {
 
 function getIndiceJogadorTurno(): number {
   const jogadores = gerenciadorJogo.getJogadores(getSocketIdsAtivos());
-  return jogadores.findIndex(j => j.e_turno_atual);
+  const idx = jogadores.findIndex(j => j.e_turno_atual);
+  console.log('🎯 getIndiceJogadorTurno:', idx, 'jogadores:', jogadores.map(j => ({ nome: j.nome_jogador, e_turno: j.e_turno_atual, e_host: j.e_host })));
+  return idx;
+}
+
+function getIdJogadorTurno(): string {
+  return gerenciadorJogo.getIdJogadorAtual();
 }
 
 function mapJogadorParaFrontend(jogador: any) {

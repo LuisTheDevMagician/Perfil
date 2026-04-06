@@ -16,6 +16,7 @@ interface Player {
 }
 
 interface Answer {
+  id: number;
   playerId: string;
   playerName: string;
   answer: string;
@@ -35,14 +36,18 @@ export default function GamePage() {
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [casesToMove, setCasesToMove] = useState(1);
   const [showCorrectAnswer, setShowCorrectAnswer] = useState(false);
+  const [showErrorAnswer, setShowErrorAnswer] = useState(false);
+  const [errorPlayerName, setErrorPlayerName] = useState('');
   const [correctAnswerText, setCorrectAnswerText] = useState('');
   const [winnerName, setWinnerName] = useState('');
   const [gameEnded, setGameEnded] = useState(false);
+  const [showVictoryScreen, setShowVictoryScreen] = useState(false);
   const [ranking, setRanking] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasAnswered, setHasAnswered] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRevealing, setIsRevealing] = useState(false);
+  const [currentPlayerId, setCurrentPlayerId] = useState<string>('');
   const isRevealingRef = useRef(false);
 
   useEffect(() => {
@@ -62,18 +67,13 @@ export default function GamePage() {
       socket.emit('request-game-state');
     };
     
-    if (socket.connected) {
-      console.log('Socket já conectado na página do jogo:', socket.id);
-      handleConnect();
-    }
-    
-    const handleGameStarted = ({ currentCard: card, currentPlayerIndex: index, players: gamePlayers }: { currentCard: Card, currentPlayerIndex: number, players: Player[] }) => {
-      console.log('Evento game-started recebido:', card?.nome);
+    const handleGameStarted = ({ currentCard: card, currentPlayerIndex: index, currentPlayerId: playerId, players: gamePlayers }: { currentCard: Card, currentPlayerIndex: number, currentPlayerId: string, players: Player[] }) => {
+      console.log('Evento game-started recebido:', card?.nome, 'currentPlayerId:', playerId);
       setCurrentCard(card);
       setCurrentPlayerIndex(index);
+      setCurrentPlayerId(playerId);
       const deduplicated = gamePlayers.filter((p, i, arr) => arr.findIndex(x => x.name === p.name) === i);
       setPlayers(deduplicated);
-      setRevealedClueIndices([]);
       setShowCorrectAnswer(false);
       setIsLoading(false);
       const currentId = socket.id;
@@ -82,11 +82,13 @@ export default function GamePage() {
       setMyId(currentId || '');
     };
     
-    const handleClueRevealed = ({ revealedClueIndices: newRevealed, currentPlayerIndex: newIndex }: { revealedClueIndices: number[], currentPlayerIndex: number }) => {
+    const handleClueRevealed = ({ revealedClueIndices: newRevealed, currentPlayerIndex: newIndex, currentPlayerId: newPlayerId }: { revealedClueIndices: number[], currentPlayerIndex: number, currentPlayerId: string }) => {
+      console.log('📨 Evento clue-revealed recebido:', { newRevealed, newIndex, newPlayerId, playersLength: players.length });
       setRevealedClueIndices(newRevealed);
       setCurrentPlayerIndex(newIndex);
+      setCurrentPlayerId(newPlayerId);
+      setShowErrorAnswer(false);
       
-      // Resetar flags de revelação quando a dica for sincronizada
       isRevealingRef.current = false;
       setIsRevealing(false);
     };
@@ -104,10 +106,11 @@ export default function GamePage() {
       });
     };
     
-    const handleAnswerCorrect = ({ playerName, correctAnswer, players: updatedPlayers }: { playerName: string, correctAnswer: string, players: Player[] }) => {
+    const handleAnswerCorrect = ({ playerName, correctAnswer, currentPlayerId: playerId, players: updatedPlayers }: { playerName: string, correctAnswer: string, currentPlayerId: string, players: Player[] }) => {
       setWinnerName(playerName);
       setCorrectAnswerText(correctAnswer);
       setShowCorrectAnswer(true);
+      setCurrentPlayerId(playerId);
       setPlayers(updatedPlayers.filter((p, i, arr) => arr.findIndex(x => x.name === p.name) === i));
       setAnswers([]);
       setHasAnswered(false);
@@ -117,16 +120,25 @@ export default function GamePage() {
       }, 3000);
     };
     
-    const handleAnswerIncorrect = ({ playerName, nextPlayerIndex }: { playerName: string, nextPlayerIndex: number }) => {
-      console.log(`${playerName} errou! Próximo jogador: index ${nextPlayerIndex}`);
+    const handleAnswerIncorrect = ({ playerName, nextPlayerIndex, nextPlayerId }: { playerName: string, nextPlayerIndex: number, nextPlayerId: string }) => {
+      console.log(`❌ ${playerName} errou! Próximo jogador: index ${nextPlayerIndex}, id ${nextPlayerId}, players length: ${players.length}`);
       setCurrentPlayerIndex(nextPlayerIndex);
+      setCurrentPlayerId(nextPlayerId);
+      setErrorPlayerName(playerName);
+      setShowErrorAnswer(true);
+      setTimeout(() => {
+        setShowErrorAnswer(false);
+        setErrorPlayerName('');
+      }, 2000);
     };
     
-    const handleNextCard = ({ currentCard: card, currentPlayerIndex: index }: { currentCard: Card, currentPlayerIndex: number }) => {
+    const handleNextCard = ({ currentCard: card, currentPlayerIndex: index, currentPlayerId: playerId }: { currentCard: Card, currentPlayerIndex: number, currentPlayerId: string }) => {
       setCurrentCard(card);
       setCurrentPlayerIndex(index);
+      setCurrentPlayerId(playerId);
       setRevealedClueIndices([]);
       setShowCorrectAnswer(false);
+      setShowErrorAnswer(false);
       setAnswers([]);
       setHasAnswered(false);
       isRevealingRef.current = false;
@@ -134,8 +146,15 @@ export default function GamePage() {
     };
     
     const handleGameEnded = ({ ranking: finalRanking }: { ranking: Player[] }) => {
+      console.log('🏆 Jogo encerrado! Ranking:', finalRanking);
       setGameEnded(true);
+      setShowVictoryScreen(true);
       setRanking(finalRanking);
+    };
+    
+    const handleLobbyCleared = () => {
+      console.log('🔄 Lobby foi limpo, voltando para a página inicial');
+      router.push('/');
     };
     
     const handleAnswersUpdated = (updatedAnswers: Answer[]) => {
@@ -148,8 +167,6 @@ export default function GamePage() {
       setShowCorrectAnswer(true);
       setTimeout(() => {
         setShowCorrectAnswer(false);
-        setWinnerName('');
-        setCorrectAnswerText('');
       }, 3000);
     };
     
@@ -157,7 +174,6 @@ export default function GamePage() {
       router.push('/');
     };
 
-    // Registrar todos os listeners
     socket.on('connect', handleConnect);
     socket.on('game-started', handleGameStarted);
     socket.on('clue-revealed', handleClueRevealed);
@@ -166,14 +182,18 @@ export default function GamePage() {
     socket.on('answer-incorrect', handleAnswerIncorrect);
     socket.on('next-card', handleNextCard);
     socket.on('game-ended', handleGameEnded);
+    socket.on('victory-state', handleGameEnded);
     socket.on('answers-updated', handleAnswersUpdated);
     socket.on('answer-revealed', handleAnswerRevealed);
     socket.on('game-restarted', handleGameRestarted);
-
-    // Store socket instance after setup
+    socket.on('lobby-cleared', handleLobbyCleared);
+    
     socketRef.current = socket;
-
-    // Cleanup: remover apenas os listeners específicos, manter socket conectado
+    
+    if (socket.connected) {
+      handleConnect();
+    }
+    
     return () => {
       console.log('Página do jogo desmontada, removendo listeners');
       socket.off('game-started');
@@ -183,15 +203,18 @@ export default function GamePage() {
       socket.off('answer-incorrect');
       socket.off('next-card');
       socket.off('game-ended');
+      socket.off('victory-state');
       socket.off('answers-updated');
       socket.off('answer-revealed');
       socket.off('game-restarted');
+      socket.off('lobby-cleared');
       socket.off('connect', handleConnect);
     };
   }, [router]);
 
   const handleRevealClue = () => {
-    socketRef.current?.emit('pass-turn'); // Botão "Passar a Vez" usa pass-turn
+    console.log('👆 handleRevealClue chamado, myId:', myId, 'currentPlayerIndex:', currentPlayerIndex, 'players:', players.map(p => ({ id: p.id, name: p.name })));
+    socketRef.current?.emit('pass-turn');
     isRevealingRef.current = false;
     setIsRevealing(false);
   };
@@ -233,9 +256,9 @@ export default function GamePage() {
   };
 
   const handleValidateAnswer = (answerId: number, isCorrect: boolean) => {
-    socketRef.current?.emit('validate-answer', { answerId, isCorrect, casesToMove: isCorrect ? casesToMove : 0 });
+    socketRef.current?.emit('validate-answer', { answerId, isCorrect, casesToMove: isCorrect ? casesToMove : 1 });
     if (isCorrect) {
-      setCasesToMove(1); // Resetar
+      setCasesToMove(1);
     }
   };
   
@@ -247,6 +270,10 @@ export default function GamePage() {
 
   const handleRestartGame = () => {
     socketRef.current?.emit('restart-game');
+  };
+
+  const handleExitVictoryScreen = () => {
+    socketRef.current?.emit('exit-victory-screen');
   };
 
   const currentPlayer = players[currentPlayerIndex];
@@ -265,7 +292,8 @@ export default function GamePage() {
   }
 
   // Tela de fim de jogo
-  if (gameEnded) {
+  if (showVictoryScreen) {
+    const rankingOrdenado = [...ranking].sort((a, b) => b.score - a.score);
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full">
@@ -273,13 +301,13 @@ export default function GamePage() {
           
           <div className="bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-xl p-6 mb-6">
             <h2 className="text-2xl font-bold text-center text-white mb-2">🥇 Vencedor</h2>
-            <p className="text-3xl font-bold text-center text-white">{ranking[0]?.name}</p>
-            <p className="text-xl text-center text-white mt-2">{ranking[0]?.score} pontos</p>
+            <p className="text-3xl font-bold text-center text-white">{rankingOrdenado[0]?.name}</p>
+            <p className="text-xl text-center text-white mt-2">{rankingOrdenado[0]?.score} pontos</p>
           </div>
 
           <div className="space-y-3 mb-6">
             <h3 className="text-xl font-bold text-gray-800 text-center mb-4">Ranking Final</h3>
-            {ranking.map((player, index) => (
+            {rankingOrdenado.map((player, index) => (
               <div
                 key={player.id}
                 className={`flex items-center justify-between p-4 rounded-lg ${
@@ -299,12 +327,26 @@ export default function GamePage() {
           </div>
 
           {isHost && (
-            <button
-              onClick={handleRestartGame}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg"
-            >
-              🔄 Jogar Novamente
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={handleRestartGame}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg"
+              >
+                🔄 Jogar Novamente
+              </button>
+              <button
+                onClick={handleExitVictoryScreen}
+                className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg"
+              >
+                🚪 Sair para o Lobby
+              </button>
+            </div>
+          )}
+          
+          {!isHost && (
+            <div className="text-center text-gray-600">
+              <p>Aguarde o host decidir o próximo passo...</p>
+            </div>
           )}
         </div>
       </div>
@@ -427,21 +469,21 @@ export default function GamePage() {
                   {answers.length === 0 ? (
                     <p className="text-gray-500 text-center">Aguardando respostas...</p>
                   ) : (
-                    answers.map((answer, index) => (
-                      <div key={index} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    answers.map((answer) => (
+                      <div key={answer.id} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
                         <div className="flex items-center justify-between mb-2">
                           <span className="font-semibold text-gray-800">{answer.playerName}</span>
                         </div>
                         <p className="text-gray-700 mb-3">{answer.answer}</p>
                         <div className="flex gap-2">
                           <button
-                            onClick={() => handleValidateAnswer(index, true)}
+                            onClick={() => handleValidateAnswer(answer.id, true)}
                             className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
                           >
                             ✓ Correto
                           </button>
                           <button
-                            onClick={() => handleValidateAnswer(index, false)}
+                            onClick={() => handleValidateAnswer(answer.id, false)}
                             className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
                           >
                             ✗ Errado
@@ -485,12 +527,29 @@ export default function GamePage() {
             </div>
           </div>
         )}
+
+        {/* Notificação de Resposta Errada */}
+        {showErrorAnswer && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md mx-4 animate-bounce">
+              <h2 className="text-3xl font-bold text-center text-red-600 mb-4">
+                ✗ ERRADO!
+              </h2>
+              <p className="text-xl text-center text-gray-700 mb-2">
+                <strong>{errorPlayerName}</strong> errou!
+              </p>
+              <p className="text-lg text-center text-gray-600">
+                Vez do próximo jogador
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
   // Visão dos JOGADORES
-  const isMyTurn = currentPlayerIndex === players.findIndex(p => p.id === myId);
+  const isMyTurn = currentPlayerId === myId;
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 p-4">
@@ -562,10 +621,9 @@ export default function GamePage() {
 
             <div className="space-y-2 mb-4 max-h-96 overflow-y-auto">
               {currentCard.dicas.map((dica, index) => {
-                const isMyTurn = currentPlayerIndex === players.findIndex(p => p.id === myId);
                 const isRevealed = revealedClueIndices.includes(index);
-                const hasPendingAnswers = answers.length > 0; // Bloquear se há respostas pendentes
-                const canReveal = isMyTurn && !isRevealed && revealedClueIndices.length < 10 && !hasPendingAnswers && !isRevealing;
+                const hasPendingAnswers = answers.length > 0;
+                const canReveal = isMyTurn && !isRevealed && revealedClueIndices.length < 10 && !hasPendingAnswers;
                 
                 return (
                   <div
@@ -595,7 +653,7 @@ export default function GamePage() {
             </div>
 
             {/* Mensagem informativa */}
-            {currentPlayerIndex === players.findIndex(p => p.id === myId) && revealedClueIndices.length < 10 && answers.length === 0 && (
+            {isMyTurn && revealedClueIndices.length < 10 && answers.length === 0 && (
               <div className="mb-4 p-3 bg-blue-50 border border-blue-300 rounded-lg">
                 <p className="text-blue-800 text-center text-sm font-medium">
                   👆 Clique em uma dica amarela para revelá-la ou passe a vez
@@ -604,7 +662,7 @@ export default function GamePage() {
             )}
             
             {/* Mensagem de aguardando validação */}
-            {currentPlayerIndex === players.findIndex(p => p.id === myId) && answers.length > 0 && (
+            {isMyTurn && answers.length > 0 && (
               <div className="mb-4 p-3 bg-orange-50 border border-orange-300 rounded-lg">
                 <p className="text-orange-800 text-center text-sm font-medium">
                   ⏳ Aguarde o host validar as respostas para continuar
@@ -613,7 +671,7 @@ export default function GamePage() {
             )}
 
             {/* Botão Passar a Vez */}
-            {currentPlayerIndex === players.findIndex(p => p.id === myId) && revealedClueIndices.length < 10 && answers.length === 0 && (
+            {isMyTurn && revealedClueIndices.length < 10 && (
               <button
                 onClick={handleRevealClue}
                 className="w-full mb-4 bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg"
@@ -629,16 +687,16 @@ export default function GamePage() {
                 value={playerAnswer}
                 onChange={(e) => setPlayerAnswer(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSubmitAnswer()}
-                placeholder={hasAnswered ? "Você já respondeu" : "Digite sua resposta..."}
+                placeholder={!isMyTurn ? "Não é sua vez" : hasAnswered ? "Você já respondeu" : "Digite sua resposta..."}
                 className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none text-gray-800"
-                disabled={showCorrectAnswer || hasAnswered}
+                disabled={showCorrectAnswer || hasAnswered || !isMyTurn}
               />
               <button
                 onClick={handleSubmitAnswer}
-                disabled={!playerAnswer.trim() || showCorrectAnswer || hasAnswered || isSubmitting}
+                disabled={!playerAnswer.trim() || showCorrectAnswer || hasAnswered || isSubmitting || !isMyTurn}
                 className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg disabled:cursor-not-allowed"
               >
-                {hasAnswered ? '✓ Resposta Enviada' : isSubmitting ? '⏳ Enviando...' : '📤 Enviar Resposta'}
+                {hasAnswered ? '✓ Resposta Enviada' : isSubmitting ? '⏳ Enviando...' : !isMyTurn ? '🔒 Aguarde sua vez' : '📤 Enviar Resposta'}
               </button>
             </div>
           </div>

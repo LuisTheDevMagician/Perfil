@@ -31,6 +31,7 @@ export interface SessaoJogo {
   dicas_reveladas: string;
   id_jogador_atual: number;
   esta_ativa: boolean;
+  revelou_esta_turno: number;
   data_criacao: string;
 }
 

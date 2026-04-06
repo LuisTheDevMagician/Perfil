@@ -7,6 +7,7 @@ export const sessoesJogo = sqliteTable('sessoes_jogo', {
   dicasReveladas: text('dicas_reveladas').default('[]'),
   idJogadorAtual: integer('id_jogador_atual').default(0),
   estaAtiva: integer('esta_ativa').default(1),
+  revelouEstaTurno: integer('revelou_esta_turno').default(0),
   dataCriacao: text('data_criacao').default(new Date().toISOString()),
 });
 

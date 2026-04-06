@@ -18,9 +18,16 @@ export function initDatabase() {
       dicas_reveladas TEXT DEFAULT '[]',
       id_jogador_atual INTEGER DEFAULT 0,
       esta_ativa INTEGER DEFAULT 1,
+      revelou_esta_turno INTEGER DEFAULT 0,
       data_criacao TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  try {
+    sqlite.run('ALTER TABLE sessoes_jogo ADD COLUMN revelou_esta_turno INTEGER DEFAULT 0');
+  } catch {
+    // Coluna já existe
+  }
 
   sqlite.run(`
     CREATE TABLE IF NOT EXISTS jogadores_sessao (

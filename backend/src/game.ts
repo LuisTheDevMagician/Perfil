@@ -1,5 +1,6 @@
 import { queries } from './db/queries';
 import { gameCards, type Carta, type Jogador, type RespostaPendente, type SessaoJogo } from './models';
+import { getIO } from './socket';
 
 function mapDbToJogador(row: any): Jogador {
   return {
@@ -33,6 +34,7 @@ function mapDbToSessao(row: any): SessaoJogo {
     dicas_reveladas: row.dicasReveladas ?? row.dicas_reveladas ?? '[]',
     id_jogador_atual: row.idJogadorAtual ?? row.id_jogador_atual ?? 0,
     esta_ativa: row.estaAtiva === 1 || row.esta_ativa === 1,
+    revelou_esta_turno: row.revelouEstaTurno ?? row.revelou_esta_turno ?? 0,
     data_criacao: row.dataCriacao ?? row.data_criacao ?? new Date().toISOString(),
   };
 }
@@ -53,8 +55,9 @@ export class GerenciadorJogo {
       const row = queries.buscarSessaoAtiva();
       if (row) {
         this.sessaoAtual = mapDbToSessao(row);
+        this.revelouEstaTurno = this.sessaoAtual.revelou_esta_turno === 1;
         this.carregarJogadoresSessao(this.sessaoAtual.id);
-        console.log('✅ Sessão ativa carregada do banco:', this.sessaoAtual.id);
+        console.log('✅ Sessão ativa carregada do banco:', this.sessaoAtual.id, 'revelouEstaTurno:', this.revelouEstaTurno);
       }
     } catch (e) {
       console.log('Nenhuma sessão ativa encontrada');
@@ -63,11 +66,14 @@ export class GerenciadorJogo {
 
   private carregarJogadoresSessao(idSessao: number) {
     const jogadores = queries.buscarJogadoresSessao(idSessao);
-    this.jogadoresMap.clear();
+    const seen = new Map<number, Jogador>();
     for (const j of jogadores) {
       const jogador = mapDbToJogador(j);
-      this.jogadoresMap.set(jogador.id_socket, jogador);
-      this.jogadoresMap.set(`id:${jogador.id}`, jogador);
+      if (!seen.has(jogador.id)) {
+        seen.set(jogador.id, jogador);
+        this.jogadoresMap.set(jogador.id_socket, jogador);
+        this.jogadoresMap.set(`id:${jogador.id}`, jogador);
+      }
     }
   }
 
@@ -80,6 +86,7 @@ export class GerenciadorJogo {
       dicas_reveladas: '[]',
       id_jogador_atual: 0,
       esta_ativa: true,
+      revelou_esta_turno: 0,
       data_criacao: new Date().toISOString()
     };
     this.jogadoresMap.clear();
@@ -102,30 +109,38 @@ export class GerenciadorJogo {
   }
 
   getJogadores(socketIdsAtivos?: string[]): Jogador[] {
-    const jogadores = Array.from(this.jogadoresMap.values());
+    const seen = new Map<string, Jogador>();
+    for (const jogador of this.jogadoresMap.values()) {
+      if (!seen.has(jogador.id_socket)) {
+        seen.set(jogador.id_socket, jogador);
+      }
+    }
+    let jogadores = Array.from(seen.values());
     if (socketIdsAtivos) {
-      return jogadores.filter(j => socketIdsAtivos.includes(j.id_socket));
+      jogadores = jogadores.filter(j => socketIdsAtivos.includes(j.id_socket));
     }
     return jogadores;
   }
 
   getJogadorPorSocket(idSocket: string): Jogador | undefined {
-    return this.jogadoresMap.get(idSocket);
+    const jogadores = this.getJogadores();
+    return jogadores.find(j => j.id_socket === idSocket);
   }
 
   getJogadorPorNome(nome: string): Jogador | undefined {
-    return Array.from(this.jogadoresMap.values()).find(j => j.nome_jogador === nome);
+    const jogadores = this.getJogadores();
+    return jogadores.find(j => j.nome_jogador === nome);
   }
 
   adicionarJogador(idSocket: string, sessionId: string, nome: string): Jogador | null {
-    if (this.jogadoresMap.size >= 11) {
+    if (this.getJogadores().length >= 11) {
       return null;
     }
     const existing = this.getJogadorPorNome(nome);
     if (existing) {
       return null;
     }
-    const eHost = this.jogadoresMap.size === 0;
+    const eHost = this.getJogadores().length === 0;
     
     const idJogador = queries.adicionarJogador(
       this.sessaoAtual!.id,
@@ -156,7 +171,7 @@ export class GerenciadorJogo {
   }
 
   atualizarRolagemDado(idSocket: string, rolagem: number): boolean {
-    const jogador = this.jogadoresMap.get(idSocket);
+    const jogador = this.getJogadorPorSocket(idSocket);
     if (!jogador || jogador.e_host) return false;
     if (typeof rolagem !== 'number' || rolagem < 1 || rolagem > 100) return false;
     
@@ -167,8 +182,9 @@ export class GerenciadorJogo {
   }
 
   ordenarJogadores() {
-    const host = Array.from(this.jogadoresMap.values()).find(j => j.e_host);
-    const naoHosts = Array.from(this.jogadoresMap.values())
+    const jogadores = this.getJogadores();
+    const host = jogadores.find(j => j.e_host);
+    const naoHosts = jogadores
       .filter(j => !j.e_host)
       .sort((a, b) => {
         if (a.rolagem_dado === null) return 1;
@@ -201,6 +217,11 @@ export class GerenciadorJogo {
     this.sessaoAtual.dicas_reveladas = '[]';
     
     const players = this.getJogadores();
+    for (const p of players) {
+      p.e_turno_atual = false;
+      queries.atualizarJogador(p.id, { eTurnoAtual: 0 });
+    }
+    
     const primeiroNaoHost = players.find(j => !j.e_host);
     if (primeiroNaoHost) {
       this.sessaoAtual.id_jogador_atual = primeiroNaoHost.id;
@@ -235,7 +256,6 @@ export class GerenciadorJogo {
     const jogador = this.jogadoresMap.get(idSocket);
     if (!jogador || !jogador.e_turno_atual) return false;
 
-    this.revelouEstaTurno = false;
     this.proximoJogador();
     return true;
   }
@@ -258,6 +278,7 @@ export class GerenciadorJogo {
     jogadores[proximoIdx].e_turno_atual = true;
     this.sessaoAtual!.id_jogador_atual = jogadores[proximoIdx].id;
     queries.atualizarJogador(jogadores[proximoIdx].id, { eTurnoAtual: 1 });
+    this.revelouEstaTurno = false;
     this.atualizarSessao();
     console.log(`➡️ Vez passou para: ${jogadores[proximoIdx].nome_jogador}`);
   }
@@ -351,6 +372,11 @@ export class GerenciadorJogo {
     }
 
     const jogadores = this.getJogadores().filter(j => !j.e_host);
+    for (const j of jogadores) {
+      j.e_turno_atual = false;
+      queries.atualizarJogador(j.id, { eTurnoAtual: 0 });
+    }
+    
     if (jogadores.length > 0) {
       jogadores[0].e_turno_atual = true;
       this.sessaoAtual.id_jogador_atual = jogadores[0].id;
@@ -367,6 +393,11 @@ export class GerenciadorJogo {
     this.jogoIniciado = false;
 
     const jogadores = this.getJogadores();
+    for (const j of jogadores) {
+      j.e_turno_atual = false;
+      queries.atualizarJogador(j.id, { eTurnoAtual: 0 });
+    }
+
     const ranking = jogadores
       .filter(j => !j.e_host)
       .sort((a, b) => b.pontuacao - a.pontuacao);
@@ -387,7 +418,39 @@ export class GerenciadorJogo {
       this.sessaoAtual.esta_ativa = false;
       this.atualizarSessao();
     }
+    
+    const io = getIO();
+    if (io) {
+      io.emit('game-ended', {
+        ranking: ranking.map(j => ({
+          id: j.id_socket,
+          name: j.nome_jogador,
+          score: j.pontuacao,
+        }))
+      });
+    }
+    
     console.log('🏆 Jogo encerrado! Vencedor:', vencedor?.nome_jogador);
+    return ranking;
+  }
+
+  obterRankingFinal(): any[] {
+    const jogadores = this.getJogadores();
+    return jogadores
+      .filter(j => !j.e_host)
+      .sort((a, b) => b.pontuacao - a.pontuacao);
+  }
+
+  sairDaTelaDeVitoria(): void {
+    if (!this.jogoEncerrado) return;
+    
+    this.jogoEncerrado = false;
+    this.jogoIniciado = false;
+    this.jogadoresMap.clear();
+    this.sessaoAtual = null;
+    this.revelouEstaTurno = false;
+    queries.limparSessao();
+    console.log('👋 Saiu da tela de vitória - lobby resetado');
   }
 
   getJogoEncerrado(): boolean {
@@ -410,6 +473,13 @@ export class GerenciadorJogo {
 
   getJogoIniciado(): boolean {
     return this.jogoIniciado;
+  }
+
+  getIdJogadorAtual(): string {
+    if (!this.sessaoAtual || !this.sessaoAtual.id_jogador_atual) return '';
+    const jogadores = this.getJogadores();
+    const jogador = jogadores.find(j => j.id === this.sessaoAtual!.id_jogador_atual);
+    return jogador?.id_socket || '';
   }
 
   getRevelouEstaTurno(): boolean {
@@ -461,6 +531,7 @@ export class GerenciadorJogo {
       dicasReveladas: this.sessaoAtual.dicas_reveladas,
       idJogadorAtual: this.sessaoAtual.id_jogador_atual,
       estaAtiva: this.sessaoAtual.esta_ativa ? 1 : 0,
+      revelouEstaTurno: this.revelouEstaTurno ? 1 : 0,
     });
   }
 
@@ -486,6 +557,12 @@ export class GerenciadorJogo {
       return null;
     }
 
+    for (const [key, j] of this.jogadoresMap.entries()) {
+      if (j.id === jogadorExistente.id) {
+        this.jogadoresMap.delete(key);
+      }
+    }
+    
     const jogador = mapDbToJogador(jogadorExistente);
     console.log('✅ Jogador encontrado no banco:', jogador.nome_jogador, 'id:', jogador.id);
     jogador.id_socket = idSocket;
@@ -499,9 +576,7 @@ export class GerenciadorJogo {
 
     queries.atualizarSocketJogador(jogador.id, idSocket);
 
-    this.revelouEstaTurno = false;
-
-    console.log(`✅ Jogador reativado: ${jogador.nome_jogador} (sessionId: ${sessionId}), turno_atual: ${jogador.e_turno_atual}, id_jogador_atual: ${this.sessaoAtual?.id_jogador_atual}`);
+    console.log(`✅ Jogador reativado: ${jogador.nome_jogador} (sessionId: ${sessionId}), turno_atual: ${jogador.e_turno_atual}, id_jogador_atual: ${this.sessaoAtual?.id_jogador_atual}, revelouEstaTurno: ${this.revelouEstaTurno}`);
     return jogador;
   }
 
@@ -530,10 +605,6 @@ export class GerenciadorJogo {
     }
 
     return this.adicionarJogador(idSocket, sessionId, nome);
-  }
-
-  getRanking(): any[] {
-    return queries.buscarRanking();
   }
 }
 
