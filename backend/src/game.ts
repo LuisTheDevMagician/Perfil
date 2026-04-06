@@ -1,10 +1,44 @@
-import { db, queries } from './db';
+import { queries } from './db/queries';
 import { gameCards, type Carta, type Jogador, type RespostaPendente, type SessaoJogo } from './models';
+
+function mapDbToJogador(row: any): Jogador {
+  return {
+    id: row.id,
+    id_sessao: row.idSessao ?? row.id_sessao ?? 0,
+    id_socket: row.idSocket ?? row.id_socket ?? '',
+    nome_jogador: row.nomeJogador ?? row.nome_jogador ?? '',
+    pontuacao: row.pontuacao ?? 0,
+    rolagem_dado: row.rolagemDado ?? row.rolagem_dado ?? null,
+    e_host: row.eHost === 1 || row.e_host === 1,
+    e_turno_atual: row.eTurnoAtual === 1 || row.e_turno_atual === 1,
+  };
+}
+
+function mapDbToResposta(row: any): RespostaPendente {
+  return {
+    id: row.id,
+    id_sessao: row.idSessao ?? row.id_sessao ?? 0,
+    nome_jogador: row.nomeJogador ?? row.nome_jogador ?? '',
+    resposta: row.resposta ?? '',
+    data_envio: row.dataEnvio ?? row.data_envio ?? new Date().toISOString(),
+  };
+}
+
+function mapDbToSessao(row: any): SessaoJogo {
+  return {
+    id: row.id ?? 0,
+    nome_host: row.nomeHost ?? row.nome_host ?? '',
+    id_carta_atual: row.idCartaAtual ?? row.id_carta_atual ?? 0,
+    dicas_reveladas: row.dicasReveladas ?? row.dicas_reveladas ?? '[]',
+    id_jogador_atual: row.idJogadorAtual ?? row.id_jogador_atual ?? 0,
+    esta_ativa: row.estaAtiva === 1 || row.esta_ativa === 1,
+    data_criacao: row.dataCriacao ?? row.data_criacao ?? new Date().toISOString(),
+  };
+}
 
 export class GerenciadorJogo {
   private sessaoAtual: SessaoJogo | null = null;
   private jogadoresMap: Map<string, Jogador> = new Map();
-  private respostasMap: Map<number, RespostaPendente[]> = new Map();
   private jogoIniciado: boolean = false;
   private jogoEncerrado: boolean = false;
   private revelouEstaTurno: boolean = false;
@@ -15,17 +49,9 @@ export class GerenciadorJogo {
 
   private carregarSessaoAtiva() {
     try {
-      const row = queries.buscarSessaoAtiva.get() as any;
+      const row = queries.buscarSessaoAtiva();
       if (row) {
-        this.sessaoAtual = {
-          id: row.id,
-          nome_host: row.nome_host,
-          id_carta_atual: row.id_carta_atual,
-          dicas_reveladas: row.dicas_reveladas,
-          id_jogador_atual: row.id_jogador_atual,
-          esta_ativa: row.esta_ativa === 1,
-          data_criacao: row.data_criacao
-        };
+        this.sessaoAtual = mapDbToSessao(row);
         this.carregarJogadoresSessao(this.sessaoAtual.id);
         console.log('✅ Sessão ativa carregada do banco:', this.sessaoAtual.id);
       }
@@ -35,26 +61,16 @@ export class GerenciadorJogo {
   }
 
   private carregarJogadoresSessao(idSessao: number) {
-    const jogadores = queries.buscarJogadoresSessao.all({ id_sessao: idSessao }) as any[];
+    const jogadores = queries.buscarJogadoresSessao(idSessao);
     this.jogadoresMap.clear();
     for (const j of jogadores) {
-      const jogador: Jogador = {
-        id: j.id,
-        id_sessao: j.id_sessao,
-        id_socket: j.id_socket,
-        nome_jogador: j.nome_jogador,
-        pontuacao: j.pontuacao,
-        rolagem_dado: j.rolagem_dado,
-        e_host: j.e_host === 1,
-        e_turno_atual: j.e_turno_atual === 1
-      };
-      this.jogadoresMap.set(j.id_socket, jogador);
+      const jogador = mapDbToJogador(j);
+      this.jogadoresMap.set(jogador.id_socket, jogador);
     }
   }
 
   criarSessao(nomeHost: string): number {
-    const result = queries.criarSessao.run({ nome_host: nomeHost });
-    const idSessao = Number(result.lastInsertId);
+    const idSessao = queries.criarSessao(nomeHost);
     this.sessaoAtual = {
       id: idSessao,
       nome_host: nomeHost,
@@ -104,53 +120,41 @@ export class GerenciadorJogo {
       return null;
     }
     const eHost = this.jogadoresMap.size === 0;
-    const pontuacao = 0;
-    const rolagemDado = eHost ? 0 : null;
-    const eTurnoAtual = false;
     
-    queries.adicionarJogadorSessao.run({
-      id_sessao: this.sessaoAtual!.id,
-      id_socket: idSocket,
-      nome_jogador: nome,
-      pontuacao: pontuacao,
-      rolagem_dado: rolagemDado,
-      e_host: eHost ? 1 : 0,
-      e_turno_atual: eTurnoAtual ? 1 : 0
-    });
-
-    const row = (db.query('SELECT last_insert_rowid() as id').get() as any);
-    const idJogador = Number(row.id);
+    const idJogador = queries.adicionarJogador(
+      this.sessaoAtual!.id,
+      idSocket,
+      nome,
+      eHost ? 1 : 0
+    );
 
     const jogador: Jogador = {
       id: idJogador,
       id_sessao: this.sessaoAtual!.id,
       id_socket: idSocket,
       nome_jogador: nome,
-      pontuacao: pontuacao,
-      rolagem_dado: rolagemDado,
+      pontuacao: 0,
+      rolagem_dado: eHost ? 0 : null,
       e_host: eHost,
-      e_turno_atual: eTurnoAtual
+      e_turno_atual: false
     };
     this.jogadoresMap.set(idSocket, jogador);
 
-    queries.upsertJogador.run({ nome: nome });
+    queries.upsertJogador(nome);
 
     console.log(`✅ Jogador adicionado: ${nome} (${eHost ? 'HOST' : 'JOGADOR'})`);
     return jogador;
   }
 
-  atualizarRolagemDado(idSocket: string, rolagem: number) {
+  atualizarRolagemDado(idSocket: string, rolagem: number): boolean {
     const jogador = this.jogadoresMap.get(idSocket);
-    if (jogador && !jogador.e_host) {
-      jogador.rolagem_dado = rolagem;
-      queries.atualizarJogador.run({
-        id: jogador.id,
-        pontuacao: jogador.pontuacao,
-        rolagem_dado: rolagem,
-        e_turno_atual: jogador.e_turno_atual ? 1 : 0
-      });
-      console.log(`🎲 ${jogador.nome_jogador} rolou ${rolagem}`);
-    }
+    if (!jogador || jogador.e_host) return false;
+    if (typeof rolagem !== 'number' || rolagem < 1 || rolagem > 100) return false;
+    
+    jogador.rolagem_dado = rolagem;
+    queries.atualizarJogador(jogador.id, { rolagemDado: rolagem });
+    console.log(`🎲 ${jogador.nome_jogador} rolou ${rolagem}`);
+    return true;
   }
 
   ordenarJogadores() {
@@ -166,41 +170,42 @@ export class GerenciadorJogo {
     this.jogadoresMap.clear();
     if (host) {
       host.e_turno_atual = true;
+      queries.atualizarJogador(host.id, { eTurnoAtual: 1 });
       this.jogadoresMap.set(host.id_socket, host);
     }
     for (const j of naoHosts) {
       j.e_turno_atual = false;
+      queries.atualizarJogador(j.id, { eTurnoAtual: 0 });
       this.jogadoresMap.set(j.id_socket, j);
     }
     this.atualizarSessao();
     console.log('✅ Ordem de jogo definida');
   }
 
-  iniciarJogo() {
+  iniciarJogo(): boolean {
+    if (!this.sessaoAtual) return false;
+    
     this.jogoIniciado = true;
     this.jogoEncerrado = false;
     this.revelouEstaTurno = false;
-    this.sessaoAtual!.id_carta_atual = 0;
-    this.sessaoAtual!.dicas_reveladas = '[]';
+    this.sessaoAtual.id_carta_atual = 0;
+    this.sessaoAtual.dicas_reveladas = '[]';
     
     const players = this.getJogadores();
     const primeiroNaoHost = players.find(j => !j.e_host);
     if (primeiroNaoHost) {
-      this.sessaoAtual!.id_jogador_atual = primeiroNaoHost.id;
+      this.sessaoAtual.id_jogador_atual = primeiroNaoHost.id;
       primeiroNaoHost.e_turno_atual = true;
-      queries.atualizarJogador.run({
-        id: primeiroNaoHost.id,
-        pontuacao: primeiroNaoHost.pontuacao,
-        rolagem_dado: primeiroNaoHost.rolagem_dado,
-        e_turno_atual: 1
-      });
+      queries.atualizarJogador(primeiroNaoHost.id, { eTurnoAtual: 1 });
     }
     
     this.atualizarSessao();
     console.log('🎮 Jogo iniciado!');
+    return true;
   }
 
   revelarDica(idSocket: string, indiceDica: number): boolean {
+    if (indiceDica < 0 || indiceDica >= 10) return false;
     const jogador = this.jogadoresMap.get(idSocket);
     if (!jogador || jogador.e_host) return false;
     if (!jogador.e_turno_atual) return false;
@@ -208,7 +213,6 @@ export class GerenciadorJogo {
     
     const dicasReveladas = JSON.parse(this.sessaoAtual!.dicas_reveladas);
     if (dicasReveladas.includes(indiceDica)) return false;
-    if (indiceDica < 0 || indiceDica >= 10) return false;
 
     dicasReveladas.push(indiceDica);
     this.sessaoAtual!.dicas_reveladas = JSON.stringify(dicasReveladas);
@@ -239,22 +243,12 @@ export class GerenciadorJogo {
 
     for (const j of jogadores) {
       j.e_turno_atual = false;
-      queries.atualizarJogador.run({
-        id: j.id,
-        pontuacao: j.pontuacao,
-        rolagem_dado: j.rolagem_dado,
-        e_turno_atual: 0
-      });
+      queries.atualizarJogador(j.id, { eTurnoAtual: 0 });
     }
 
     jogadores[proximoIdx].e_turno_atual = true;
     this.sessaoAtual!.id_jogador_atual = jogadores[proximoIdx].id;
-    queries.atualizarJogador.run({
-      id: jogadores[proximoIdx].id,
-      pontuacao: jogadores[proximoIdx].pontuacao,
-      rolagem_dado: jogadores[proximoIdx].rolagem_dado,
-      e_turno_atual: 1
-    });
+    queries.atualizarJogador(jogadores[proximoIdx].id, { eTurnoAtual: 1 });
     this.atualizarSessao();
     console.log(`➡️ Vez passou para: ${jogadores[proximoIdx].nome_jogador}`);
   }
@@ -266,14 +260,7 @@ export class GerenciadorJogo {
     const jaRespondeu = this.getRespostas().some(r => r.nome_jogador === jogador.nome_jogador);
     if (jaRespondeu) return null;
 
-    queries.adicionarRespostaPendente.run({
-      id_sessao: this.sessaoAtual!.id,
-      nome_jogador: jogador.nome_jogador,
-      resposta: resposta
-    });
-
-    const row = (db.query('SELECT last_insert_rowid() as id').get() as any);
-    const idResposta = Number(row.id);
+    const idResposta = queries.adicionarRespostaPendente(this.sessaoAtual!.id, jogador.nome_jogador, resposta);
 
     const respostaPendente: RespostaPendente = {
       id: idResposta,
@@ -283,8 +270,6 @@ export class GerenciadorJogo {
       data_envio: new Date().toISOString()
     };
 
-    const respostas = this.getRespostas();
-    respostas.push(respostaPendente);
     console.log(`✉️ ${jogador.nome_jogador} respondeu: "${resposta}"`);
     return respostaPendente;
   }
@@ -292,13 +277,15 @@ export class GerenciadorJogo {
   getRespostas(): RespostaPendente[] {
     if (!this.sessaoAtual) return [];
     try {
-      return queries.buscarRespostasSessao.all({ id_sessao: this.sessaoAtual.id }) as RespostaPendente[];
+      const respostas = queries.buscarRespostasSessao(this.sessaoAtual.id);
+      return respostas.map(mapDbToResposta);
     } catch {
       return [];
     }
   }
 
   validarResposta(idResposta: number, isCorrect: boolean, casas: number): { sucesso: boolean, nomeJogador?: string, respostaCorreta?: string } {
+    if (casas < 1 || casas > 10) return { sucesso: false };
     const respostas = this.getRespostas();
     const resposta = respostas.find(r => r.id === idResposta);
     if (!resposta) return { sucesso: false };
@@ -306,14 +293,11 @@ export class GerenciadorJogo {
     const jogador = this.getJogadorPorNome(resposta.nome_jogador);
     if (!jogador) return { sucesso: false };
 
-    queries.removerResposta.run({ id: idResposta });
+    queries.removerResposta(idResposta);
 
     if (isCorrect) {
       jogador.pontuacao += casas;
-      queries.atualizarPontuacaoPorSocket.run({
-        id_socket: jogador.id_socket,
-        pontuacao: jogador.pontuacao
-      });
+      queries.atualizarPontuacaoPorSocket(jogador.id_socket, jogador.pontuacao);
 
       const cartaAtual = this.getCartaAtual();
       console.log(`✓ ${jogador.nome_jogador} acertou! +${casas} pontos`);
@@ -346,11 +330,13 @@ export class GerenciadorJogo {
   }
 
   private proximaCarta() {
-    this.sessaoAtual!.id_carta_atual++;
-    this.sessaoAtual!.dicas_reveladas = '[]';
+    if (!this.sessaoAtual) return;
+    
+    this.sessaoAtual.id_carta_atual++;
+    this.sessaoAtual.dicas_reveladas = '[]';
     this.revelouEstaTurno = false;
 
-    if (this.sessaoAtual!.id_carta_atual >= gameCards.length) {
+    if (this.sessaoAtual.id_carta_atual >= gameCards.length) {
       this.encerrarJogo();
       return;
     }
@@ -358,10 +344,11 @@ export class GerenciadorJogo {
     const jogadores = this.getJogadores().filter(j => !j.e_host);
     if (jogadores.length > 0) {
       jogadores[0].e_turno_atual = true;
-      this.sessaoAtual!.id_jogador_atual = jogadores[0].id;
+      this.sessaoAtual.id_jogador_atual = jogadores[0].id;
+      queries.atualizarJogador(jogadores[0].id, { eTurnoAtual: 1 });
     }
 
-    queries.limparRespostasSessao.run({ id_sessao: this.sessaoAtual!.id });
+    queries.limparRespostasSessao(this.sessaoAtual.id);
     this.atualizarSessao();
     console.log(`🃏 Próxima carta: ${this.getCartaAtual()?.nome}`);
   }
@@ -377,21 +364,20 @@ export class GerenciadorJogo {
 
     const vencedor = ranking[0];
     if (vencedor) {
-      queries.atualizarPontuacaoJogador.run({
-        nome: vencedor.nome_jogador,
-        pontuacao: vencedor.pontuacao
-      });
-      queries.adicionarVitoria.run({ nome: vencedor.nome_jogador });
+      queries.atualizarPontuacaoJogador(vencedor.nome_jogador, vencedor.pontuacao);
+      queries.adicionarVitoria(vencedor.nome_jogador);
     }
 
-    queries.adicionarHistoricoPartida.run({
-      nome_vencedor: vencedor?.nome_jogador,
-      pontuacao_vencedor: vencedor?.pontuacao,
-      total_jogadores: ranking.length
-    });
+    queries.adicionarHistoricoPartida(
+      vencedor?.nome_jogador || null,
+      vencedor?.pontuacao || null,
+      ranking.length
+    );
 
-    this.sessaoAtual!.esta_ativa = false;
-    this.atualizarSessao();
+    if (this.sessaoAtual) {
+      this.sessaoAtual.esta_ativa = false;
+      this.atualizarSessao();
+    }
     console.log('🏆 Jogo encerrado! Vencedor:', vencedor?.nome_jogador);
   }
 
@@ -425,36 +411,26 @@ export class GerenciadorJogo {
     const jogador = this.jogadoresMap.get(idSocket);
     if (jogador) {
       console.log(`❌ ${jogador.nome_jogador} desconectou`);
-      queries.removerJogador.run({ id_socket: idSocket });
+      queries.removerJogador(idSocket);
       this.jogadoresMap.delete(idSocket);
 
       if (jogador.e_host && this.jogadoresMap.size > 0) {
         const novoHost = this.getJogadores()[0];
         novoHost.e_host = true;
-        queries.atualizarJogador.run({
-          id: novoHost.id,
-          pontuacao: novoHost.pontuacao,
-          rolagem_dado: novoHost.rolagem_dado,
-          e_turno_atual: novoHost.e_turno_atual ? 1 : 0
-        });
+        queries.atualizarJogador(novoHost.id, { eTurnoAtual: novoHost.e_turno_atual ? 1 : 0 });
       }
     }
   }
 
-  reiniciarJogo() {
-    if (!this.sessaoAtual) return;
+  reiniciarJogo(): boolean {
+    if (!this.sessaoAtual) return false;
 
     const jogadores = this.getJogadores();
     for (const j of jogadores) {
       j.pontuacao = 0;
       j.rolagem_dado = j.e_host ? 0 : null;
       j.e_turno_atual = false;
-      queries.atualizarJogador.run({
-        id: j.id,
-        pontuacao: 0,
-        rolagem_dado: j.rolagem_dado,
-        e_turno_atual: 0
-      });
+      queries.atualizarJogador(j.id, { pontuacao: 0, rolagemDado: j.e_host ? 0 : null, eTurnoAtual: 0 });
     }
 
     this.jogoIniciado = false;
@@ -467,21 +443,21 @@ export class GerenciadorJogo {
     this.sessaoAtual = null;
     this.jogadoresMap.clear();
     console.log('🔄 Jogo reiniciado');
+    return true;
   }
 
   private atualizarSessao() {
     if (!this.sessaoAtual) return;
-    queries.atualizarSessao.run({
-      id: this.sessaoAtual.id,
-      id_carta_atual: this.sessaoAtual.id_carta_atual,
-      dicas_reveladas: this.sessaoAtual.dicas_reveladas,
-      id_jogador_atual: this.sessaoAtual.id_jogador_atual,
-      esta_ativa: this.sessaoAtual.esta_ativa ? 1 : 0
+    queries.atualizarSessao(this.sessaoAtual.id, {
+      idCartaAtual: this.sessaoAtual.id_carta_atual,
+      dicasReveladas: this.sessaoAtual.dicas_reveladas,
+      idJogadorAtual: this.sessaoAtual.id_jogador_atual,
+      estaAtiva: this.sessaoAtual.esta_ativa ? 1 : 0,
     });
   }
 
   getRanking(): any[] {
-    return queries.buscarRanking.all() as any[];
+    return queries.buscarRanking();
   }
 }
 

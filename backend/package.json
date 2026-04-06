@@ -8,12 +8,16 @@
     "start": "bun run src/index.ts"
   },
   "dependencies": {
+    "@elysiajs/cors": "latest",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
+    "drizzle-orm": "^0.45.2",
     "elysia": "latest",
-    "socket.io": "^4.8.1",
-    "@elysiajs/cors": "latest"
+    "socket.io": "^4.8.1"
   },
   "devDependencies": {
-    "bun-types": "latest"
+    "bun-types": "latest",
+    "drizzle-kit": "^0.31.10"
   },
   "module": "src/index.js"
 }

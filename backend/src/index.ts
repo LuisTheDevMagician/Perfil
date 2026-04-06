@@ -1,6 +1,6 @@
 import { createServer } from 'http';
 import { initSocket } from './socket';
-import { db } from './db';
+import './db';
 
 const PORT = 3001;
 const HOST = '0.0.0.0';
