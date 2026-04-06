@@ -14,6 +14,7 @@ export const jogadoresSessao = sqliteTable('jogadores_sessao', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   idSessao: integer('id_sessao').references(() => sessoesJogo.id),
   idSocket: text('id_socket').notNull(),
+  sessionId: text('session_id').notNull(),
   nomeJogador: text('nome_jogador').notNull(),
   pontuacao: integer('pontuacao').default(0),
   rolagemDado: integer('rolagem_dado'),

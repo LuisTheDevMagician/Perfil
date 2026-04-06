@@ -6,6 +6,7 @@ function mapDbToJogador(row: any): Jogador {
     id: row.id,
     id_sessao: row.idSessao ?? row.id_sessao ?? 0,
     id_socket: row.idSocket ?? row.id_socket ?? '',
+    session_id: row.sessionId ?? row.session_id ?? '',
     nome_jogador: row.nomeJogador ?? row.nome_jogador ?? '',
     pontuacao: row.pontuacao ?? 0,
     rolagem_dado: row.rolagemDado ?? row.rolagem_dado ?? null,
@@ -66,6 +67,7 @@ export class GerenciadorJogo {
     for (const j of jogadores) {
       const jogador = mapDbToJogador(j);
       this.jogadoresMap.set(jogador.id_socket, jogador);
+      this.jogadoresMap.set(`id:${jogador.id}`, jogador);
     }
   }
 
@@ -99,8 +101,12 @@ export class GerenciadorJogo {
     return null;
   }
 
-  getJogadores(): Jogador[] {
-    return Array.from(this.jogadoresMap.values());
+  getJogadores(socketIdsAtivos?: string[]): Jogador[] {
+    const jogadores = Array.from(this.jogadoresMap.values());
+    if (socketIdsAtivos) {
+      return jogadores.filter(j => socketIdsAtivos.includes(j.id_socket));
+    }
+    return jogadores;
   }
 
   getJogadorPorSocket(idSocket: string): Jogador | undefined {
@@ -111,7 +117,7 @@ export class GerenciadorJogo {
     return Array.from(this.jogadoresMap.values()).find(j => j.nome_jogador === nome);
   }
 
-  adicionarJogador(idSocket: string, nome: string): Jogador | null {
+  adicionarJogador(idSocket: string, sessionId: string, nome: string): Jogador | null {
     if (this.jogadoresMap.size >= 11) {
       return null;
     }
@@ -124,6 +130,7 @@ export class GerenciadorJogo {
     const idJogador = queries.adicionarJogador(
       this.sessaoAtual!.id,
       idSocket,
+      sessionId,
       nome,
       eHost ? 1 : 0
     );
@@ -132,6 +139,7 @@ export class GerenciadorJogo {
       id: idJogador,
       id_sessao: this.sessaoAtual!.id,
       id_socket: idSocket,
+      session_id: sessionId,
       nome_jogador: nome,
       pontuacao: 0,
       rolagem_dado: eHost ? 0 : null,
@@ -139,6 +147,7 @@ export class GerenciadorJogo {
       e_turno_atual: false
     };
     this.jogadoresMap.set(idSocket, jogador);
+    this.jogadoresMap.set(`id:${idJogador}`, jogador);
 
     queries.upsertJogador(nome);
 
@@ -169,8 +178,8 @@ export class GerenciadorJogo {
     
     this.jogadoresMap.clear();
     if (host) {
-      host.e_turno_atual = true;
-      queries.atualizarJogador(host.id, { eTurnoAtual: 1 });
+      host.e_turno_atual = false;
+      queries.atualizarJogador(host.id, { eTurnoAtual: 0 });
       this.jogadoresMap.set(host.id_socket, host);
     }
     for (const j of naoHosts) {
@@ -410,8 +419,7 @@ export class GerenciadorJogo {
   removerJogador(idSocket: string) {
     const jogador = this.jogadoresMap.get(idSocket);
     if (jogador) {
-      console.log(`❌ ${jogador.nome_jogador} desconectou`);
-      queries.removerJogador(idSocket);
+      console.log(`❌ ${jogador.nome_jogador} desconectou (memória)`);
       this.jogadoresMap.delete(idSocket);
 
       if (jogador.e_host && this.jogadoresMap.size > 0) {
@@ -454,6 +462,74 @@ export class GerenciadorJogo {
       idJogadorAtual: this.sessaoAtual.id_jogador_atual,
       estaAtiva: this.sessaoAtual.esta_ativa ? 1 : 0,
     });
+  }
+
+  limparTudo() {
+    this.jogadoresMap.clear();
+    this.sessaoAtual = null;
+    this.jogoIniciado = false;
+    this.jogoEncerrado = false;
+    this.revelouEstaTurno = false;
+    queries.limparSessao();
+    console.log('🧹 Estado limpo - memória e banco');
+  }
+
+  reativarJogador(idSocket: string, sessionId: string): Jogador | null {
+    console.log('🔍 Tentando reativar jogador com sessionId:', sessionId);
+    
+    const allJogadores = queries.buscarJogadoresSessao(this.sessaoAtual?.id || 0);
+    console.log('🔍 Todos os jogadores na sessão:', allJogadores.map((j: any) => ({ nome: j.nome_jogador, sessionId: j.session_id, idSocket: j.id_socket })));
+    
+    const jogadorExistente = queries.buscarJogadorPorSessionId(sessionId);
+    if (!jogadorExistente) {
+      console.log('❌ Jogador não encontrado no banco com sessionId:', sessionId);
+      return null;
+    }
+
+    const jogador = mapDbToJogador(jogadorExistente);
+    console.log('✅ Jogador encontrado no banco:', jogador.nome_jogador, 'id:', jogador.id);
+    jogador.id_socket = idSocket;
+    
+    if (this.sessaoAtual && this.sessaoAtual.id_jogador_atual === jogador.id) {
+      jogador.e_turno_atual = true;
+    }
+    
+    this.jogadoresMap.set(idSocket, jogador);
+    this.jogadoresMap.set(`id:${jogador.id}`, jogador);
+
+    queries.atualizarSocketJogador(jogador.id, idSocket);
+
+    this.revelouEstaTurno = false;
+
+    console.log(`✅ Jogador reativado: ${jogador.nome_jogador} (sessionId: ${sessionId}), turno_atual: ${jogador.e_turno_atual}, id_jogador_atual: ${this.sessaoAtual?.id_jogador_atual}`);
+    return jogador;
+  }
+
+  resetarEstadoTurno() {
+    this.revelouEstaTurno = false;
+  }
+
+  reativarOuAdicionarJogador(idSocket: string, sessionId: string, nome: string): Jogador | null {
+    const existing = this.getJogadorPorNome(nome);
+    if (existing) {
+      const reativado = this.reativarJogador(idSocket, sessionId);
+      if (reativado) {
+        console.log(`✅ Jogador existente reativado: ${nome}`);
+        return reativado;
+      }
+    }
+
+    const reativado = this.reativarJogador(idSocket, sessionId);
+    if (reativado) {
+      console.log(`✅ Jogador existente reativado por sessionId: ${nome}`);
+      return reativado;
+    }
+
+    if (this.jogadoresMap.size >= 11) {
+      return null;
+    }
+
+    return this.adicionarJogador(idSocket, sessionId, nome);
   }
 
   getRanking(): any[] {

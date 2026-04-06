@@ -4,7 +4,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Socket } from 'socket.io-client';
-import { getSocket } from '@/lib/socket';
+import { getSocket, getSessionId } from '@/lib/socket';
 
 interface Player {
   id: string;
@@ -53,19 +53,23 @@ export default function Home() {
     });
 
     // Eventos do socket
+    const deduplicatePlayers = (playerList: Player[]): Player[] => {
+      return playerList.filter((p, i, arr) => arr.findIndex(x => x.name === p.name) === i);
+    };
+
     socket.on('joined-lobby', ({ player, players: allPlayers }: { player: Player, players: Player[] }) => {
       setCurrentPlayer(player);
-      setPlayers(allPlayers);
+      setPlayers(deduplicatePlayers(allPlayers));
       setJoined(true);
       setError('');
     });
 
     socket.on('player-joined', (updatedPlayers: Player[]) => {
-      setPlayers(updatedPlayers);
+      setPlayers(deduplicatePlayers(updatedPlayers));
     });
 
     socket.on('player-left', ({ players: updatedPlayers }: { playerId: string, players: Player[] }) => {
-      setPlayers(updatedPlayers);
+      setPlayers(deduplicatePlayers(updatedPlayers));
     });
 
     socket.on('dice-rolled', ({ playerId, diceRoll }: { playerId: string, playerName: string, diceRoll: number }) => {
@@ -103,7 +107,12 @@ export default function Home() {
       setError('Por favor, digite um nome.');
       return;
     }
-    socketRef.current?.emit('join-lobby', playerName.trim());
+    const sessionId = getSessionId();
+    localStorage.setItem('perfil_player_name', playerName.trim());
+    socketRef.current?.emit('join-lobby', { 
+      nome: playerName.trim(),
+      sessionId 
+    });
   };
 
   const handleRollDice = () => {

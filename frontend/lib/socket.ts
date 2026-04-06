@@ -1,7 +1,24 @@
-// Socket.io singleton para compartilhar a mesma conexão entre páginas
 import { io, Socket } from 'socket.io-client';
 
 let socket: Socket | null = null;
+
+function getOrCreateSessionId(): string {
+  if (typeof window === 'undefined') return '';
+  
+  const STORAGE_KEY = 'perfil_session_id';
+  let sessionId = localStorage.getItem(STORAGE_KEY);
+  
+  if (!sessionId) {
+    sessionId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+    localStorage.setItem(STORAGE_KEY, sessionId);
+  }
+  
+  return sessionId;
+}
 
 export const getSocket = (): Socket => {
   if (!socket) {
@@ -9,7 +26,9 @@ export const getSocket = (): Socket => {
       ? `${window.location.protocol}//${window.location.hostname}:3001`
       : 'http://localhost:3001';
     
-    console.log('Criando nova conexão socket:', socketUrl);
+    const sessionId = getOrCreateSessionId();
+    
+    console.log('Criando nova conexão socket:', socketUrl, 'sessionId:', sessionId);
     
     socket = io(socketUrl, {
       transports: ['websocket', 'polling'],
@@ -17,9 +36,9 @@ export const getSocket = (): Socket => {
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
       autoConnect: true,
+      query: { sessionId }
     });
 
-    // Log de conexão
     socket.on('connect', () => {
       console.log('✅ Socket conectado:', socket?.id);
     });
@@ -41,4 +60,8 @@ export const disconnectSocket = () => {
     socket.disconnect();
     socket = null;
   }
+};
+
+export const getSessionId = (): string => {
+  return getOrCreateSessionId();
 };

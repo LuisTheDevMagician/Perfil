@@ -53,12 +53,12 @@ export const queries = {
     return stmt.run(id);
   },
 
-  adicionarJogador: (idSessao: number, idSocket: string, nomeJogador: string, eHost: number): number => {
+  adicionarJogador: (idSessao: number, idSocket: string, sessionId: string, nomeJogador: string, eHost: number): number => {
     const stmt = sqlite.prepare(`
-      INSERT INTO jogadores_sessao (id_sessao, id_socket, nome_jogador, pontuacao, rolagem_dado, e_host, e_turno_atual)
-      VALUES (?, ?, ?, 0, ?, ?, 0)
+      INSERT INTO jogadores_sessao (id_sessao, id_socket, session_id, nome_jogador, pontuacao, rolagem_dado, e_host, e_turno_atual)
+      VALUES (?, ?, ?, ?, 0, ?, ?, 0)
     `);
-    const result = stmt.run(idSessao, idSocket, nomeJogador, eHost === 1 ? 0 : null, eHost);
+    const result = stmt.run(idSessao, idSocket, sessionId, nomeJogador, eHost === 1 ? 0 : null, eHost);
     return Number(result.lastInsertRowid);
   },
 
@@ -70,6 +70,16 @@ export const queries = {
   buscarJogadorPorSocket: (idSocket: string) => {
     const stmt = sqlite.prepare('SELECT * FROM jogadores_sessao WHERE id_socket = ?');
     return stmt.get(idSocket) as any;
+  },
+
+  buscarJogadorPorSessionId: (sessionId: string) => {
+    const stmt = sqlite.prepare('SELECT * FROM jogadores_sessao WHERE session_id = ?');
+    return stmt.get(sessionId) as any;
+  },
+
+  atualizarSocketJogador: (id: number, idSocket: string) => {
+    const stmt = sqlite.prepare('UPDATE jogadores_sessao SET id_socket = ? WHERE id = ?');
+    return stmt.run(idSocket, id);
   },
 
   atualizarJogador: (id: number, data: { pontuacao?: number; rolagemDado?: number | null; eTurnoAtual?: number }) => {
@@ -148,5 +158,12 @@ export const queries = {
   buscarRanking: () => {
     const stmt = sqlite.prepare('SELECT nome, pontuacao_total, total_vitorias FROM jogadores ORDER BY pontuacao_total DESC LIMIT 10');
     return stmt.all() as any[];
+  },
+
+  limparSessao: () => {
+    sqlite.prepare('DELETE FROM respostas_pendentes').run();
+    sqlite.prepare('DELETE FROM jogadores_sessao').run();
+    sqlite.prepare('UPDATE sessoes_jogo SET esta_ativa = 0').run();
+    console.log('🧹 Sessão limpiada do banco de dados');
   },
 };

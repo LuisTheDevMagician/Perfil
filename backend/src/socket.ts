@@ -4,6 +4,13 @@ import { validarNome, validarResposta, validarIndiceDica, validarCasas } from '.
 
 let io: SocketIOServer;
 
+function getSocketIdsAtivos(): string[] {
+  if (!io) return [];
+  const ids = Array.from((io.sockets as any).sockets.keys()) as string[];
+  console.log('🔍 Socket IDs ativos:', ids.length, ids);
+  return ids;
+}
+
 export function initSocket(httpServer: any) {
   io = new SocketIOServer(httpServer, {
     cors: {
@@ -13,11 +20,13 @@ export function initSocket(httpServer: any) {
   });
 
   io.on('connection', (socket) => {
-    console.log('🔌 Cliente conectado:', socket.id);
+    console.log('🔌 Cliente conectado:', socket.id, 'query:', socket.handshake.query);
 
     socket.on('join-lobby', (data: unknown) => {
       try {
-        const nome = typeof data === 'string' ? data : (data as any)?.nome;
+        const rawData = typeof data === 'string' ? { nome: data } : data;
+        const nome = (rawData as any)?.nome;
+        const sessionId = (rawData as any)?.sessionId || socket.handshake.query?.sessionId as string;
         
         const nomeValidado = validarNome(nome);
         if (!nomeValidado) {
@@ -31,19 +40,23 @@ export function initSocket(httpServer: any) {
           gerenciadorJogo.criarSessao(nomeValidado);
         }
 
-        const jogador = gerenciadorJogo.adicionarJogador(socket.id, nomeValidado);
+        const jogador = gerenciadorJogo.reativarOuAdicionarJogador(socket.id, sessionId, nomeValidado);
         
         if (!jogador) {
           socket.emit('lobby-full');
           return;
         }
 
+        if (gerenciadorJogo.getJogoIniciado()) {
+          gerenciadorJogo.resetarEstadoTurno();
+        }
+
         socket.emit('joined-lobby', { 
           player: mapJogadorParaFrontend(jogador), 
-          players: gerenciadorJogo.getJogadores().map(mapJogadorParaFrontend)
+          players: gerenciadorJogo.getJogadores(getSocketIdsAtivos()).map(mapJogadorParaFrontend)
         });
 
-        socket.broadcast.emit('player-joined', gerenciadorJogo.getJogadores().map(mapJogadorParaFrontend));
+        socket.broadcast.emit('player-joined', gerenciadorJogo.getJogadores(getSocketIdsAtivos()).map(mapJogadorParaFrontend));
       } catch (error: any) {
         console.error('Erro em join-lobby:', error.message);
         socket.emit('error', { message: error.message });
@@ -56,7 +69,7 @@ export function initSocket(httpServer: any) {
           socket.emit('game-started', {
             currentCard: gerenciadorJogo.getCartaAtual(),
             currentPlayerIndex: getIndiceJogadorTurno(),
-            players: gerenciadorJogo.getJogadores().map(mapJogadorParaFrontend),
+            players: gerenciadorJogo.getJogadores(getSocketIdsAtivos()).map(mapJogadorParaFrontend),
           });
 
           if (gerenciadorJogo.getDicasReveladas().length > 0) {
@@ -94,7 +107,7 @@ export function initSocket(httpServer: any) {
         if (!jogador || !jogador.e_host) return;
 
         gerenciadorJogo.ordenarJogadores();
-        io.emit('play-order-set', gerenciadorJogo.getJogadores().map(mapJogadorParaFrontend));
+        io.emit('play-order-set', gerenciadorJogo.getJogadores(getSocketIdsAtivos()).map(mapJogadorParaFrontend));
       } catch (error: any) {
         console.error('Erro em set-play-order:', error.message);
       }
@@ -110,7 +123,7 @@ export function initSocket(httpServer: any) {
         io.emit('game-started', {
           currentCard: gerenciadorJogo.getCartaAtual(),
           currentPlayerIndex: getIndiceJogadorTurno(),
-          players: gerenciadorJogo.getJogadores().map(mapJogadorParaFrontend),
+          players: gerenciadorJogo.getJogadores(getSocketIdsAtivos()).map(mapJogadorParaFrontend),
         });
       } catch (error: any) {
         console.error('Erro em start-game:', error.message);
@@ -166,7 +179,7 @@ export function initSocket(httpServer: any) {
 
         const resp = gerenciadorJogo.adicionarResposta(socket.id, respostaValidada);
         if (resp) {
-          const host = gerenciadorJogo.getJogadores().find(j => j.e_host);
+          const host = gerenciadorJogo.getJogadores(getSocketIdsAtivos()).find(j => j.e_host);
           if (host) {
             io.to(host.id_socket).emit('new-answer', resp);
           }
@@ -210,7 +223,7 @@ export function initSocket(httpServer: any) {
               playerName: resultado.nomeJogador,
               correctAnswer: resultado.respostaCorreta,
               casesToMove: casasValidas,
-              players: gerenciadorJogo.getJogadores().map(mapJogadorParaFrontend),
+              players: gerenciadorJogo.getJogadores(getSocketIdsAtivos()).map(mapJogadorParaFrontend),
             });
 
             setTimeout(() => {
@@ -262,7 +275,7 @@ export function initSocket(httpServer: any) {
         if (!jogador || !jogador.e_host) return;
 
         gerenciadorJogo.reiniciarJogo();
-        io.emit('game-restarted', gerenciadorJogo.getJogadores().map(mapJogadorParaFrontend));
+        io.emit('game-restarted', gerenciadorJogo.getJogadores(getSocketIdsAtivos()).map(mapJogadorParaFrontend));
       } catch (error: any) {
         console.error('Erro em restart-game:', error.message);
       }
@@ -273,7 +286,7 @@ export function initSocket(httpServer: any) {
         gerenciadorJogo.removerJogador(socket.id);
         io.emit('player-left', { 
           playerId: socket.id, 
-          players: gerenciadorJogo.getJogadores().map(mapJogadorParaFrontend) 
+          players: gerenciadorJogo.getJogadores(getSocketIdsAtivos()).map(mapJogadorParaFrontend) 
         });
       } catch (error: any) {
         console.error('Erro em disconnect:', error.message);
@@ -286,7 +299,7 @@ export function initSocket(httpServer: any) {
 }
 
 function getIndiceJogadorTurno(): number {
-  const jogadores = gerenciadorJogo.getJogadores();
+  const jogadores = gerenciadorJogo.getJogadores(getSocketIdsAtivos());
   return jogadores.findIndex(j => j.e_turno_atual);
 }
 

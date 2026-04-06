@@ -27,6 +27,7 @@ export function initDatabase() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       id_sessao INTEGER NOT NULL,
       id_socket TEXT NOT NULL,
+      session_id TEXT NOT NULL,
       nome_jogador TEXT NOT NULL,
       pontuacao INTEGER DEFAULT 0,
       rolagem_dado INTEGER,
@@ -35,6 +36,12 @@ export function initDatabase() {
       FOREIGN KEY (id_sessao) REFERENCES sessoes_jogo(id) ON DELETE CASCADE
     )
   `);
+
+  try {
+    sqlite.run('ALTER TABLE jogadores_sessao ADD COLUMN session_id TEXT DEFAULT ""');
+  } catch {
+    // Coluna já existe
+  }
 
   sqlite.run(`
     CREATE TABLE IF NOT EXISTS respostas_pendentes (

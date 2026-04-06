@@ -8,6 +8,7 @@ export interface Jogador {
   id: number;
   id_sessao: number;
   id_socket: string;
+  session_id: string;
   nome_jogador: string;
   pontuacao: number;
   rolagem_dado: number | null;

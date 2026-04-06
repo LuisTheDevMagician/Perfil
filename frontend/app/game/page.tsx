@@ -4,7 +4,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Socket } from 'socket.io-client';
-import { getSocket } from '@/lib/socket';
+import { getSocket, getSessionId } from '@/lib/socket';
 import { Card } from '@/lib/cards';
 
 interface Player {
@@ -48,33 +48,36 @@ export default function GamePage() {
   useEffect(() => {
     console.log('Página do jogo carregada');
     
-    // Usar socket singleton - mesma conexão do lobby
     const socket = getSocket();
     socketRef.current = socket;
     
-    if (socket.connected) {
-      console.log('Socket já conectado na página do jogo:', socket.id);
-      // Solicitar estado atual do jogo
-      socket.emit('request-game-state');
-    }
-
-    // Handlers dos eventos
     const handleConnect = () => {
       console.log('Socket conectado na página do jogo:', socket.id);
       setMyId(socket.id || '');
+      const sessionId = getSessionId?.() || localStorage.getItem('perfil_session_id') || '';
+      const playerName = localStorage.getItem('perfil_player_name') || '';
+      if (sessionId && playerName) {
+        socket.emit('join-lobby', { nome: playerName, sessionId });
+      }
       socket.emit('request-game-state');
     };
+    
+    if (socket.connected) {
+      console.log('Socket já conectado na página do jogo:', socket.id);
+      handleConnect();
+    }
     
     const handleGameStarted = ({ currentCard: card, currentPlayerIndex: index, players: gamePlayers }: { currentCard: Card, currentPlayerIndex: number, players: Player[] }) => {
       console.log('Evento game-started recebido:', card?.nome);
       setCurrentCard(card);
       setCurrentPlayerIndex(index);
-      setPlayers(gamePlayers);
+      const deduplicated = gamePlayers.filter((p, i, arr) => arr.findIndex(x => x.name === p.name) === i);
+      setPlayers(deduplicated);
       setRevealedClueIndices([]);
       setShowCorrectAnswer(false);
       setIsLoading(false);
       const currentId = socket.id;
-      const me = gamePlayers.find((p: Player) => p.id === currentId);
+      const me = deduplicated.find((p: Player) => p.id === currentId);
       setIsHost(me?.isHost || false);
       setMyId(currentId || '');
     };
@@ -105,7 +108,7 @@ export default function GamePage() {
       setWinnerName(playerName);
       setCorrectAnswerText(correctAnswer);
       setShowCorrectAnswer(true);
-      setPlayers(updatedPlayers);
+      setPlayers(updatedPlayers.filter((p, i, arr) => arr.findIndex(x => x.name === p.name) === i));
       setAnswers([]);
       setHasAnswered(false);
       setTimeout(() => {

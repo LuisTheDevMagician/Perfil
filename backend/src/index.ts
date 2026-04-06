@@ -1,9 +1,16 @@
 import { createServer } from 'http';
 import { initSocket } from './socket';
+import { gerenciadorJogo } from './game';
 import './db';
 
 const PORT = 3001;
 const HOST = '0.0.0.0';
+
+process.on('SIGINT', () => {
+  console.log('\n🛑 Encerrando servidor...');
+  gerenciadorJogo.limparTudo();
+  process.exit(0);
+});
 
 const httpServer = createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
