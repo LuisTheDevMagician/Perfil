@@ -38,6 +38,7 @@ export default function GamePage() {
   const [showCorrectAnswer, setShowCorrectAnswer] = useState(false);
   const [showErrorAnswer, setShowErrorAnswer] = useState(false);
   const [errorPlayerName, setErrorPlayerName] = useState('');
+  const [errorAnswer, setErrorAnswer] = useState('');
   const [correctAnswerText, setCorrectAnswerText] = useState('');
   const [winnerName, setWinnerName] = useState('');
   const [gameEnded, setGameEnded] = useState(false);
@@ -120,16 +121,18 @@ export default function GamePage() {
       }, 3000);
     };
     
-    const handleAnswerIncorrect = ({ playerName, nextPlayerIndex, nextPlayerId }: { playerName: string, nextPlayerIndex: number, nextPlayerId: string }) => {
-      console.log(`❌ ${playerName} errou! Próximo jogador: index ${nextPlayerIndex}, id ${nextPlayerId}, players length: ${players.length}`);
+    const handleAnswerIncorrect = ({ playerName, answer, nextPlayerIndex, nextPlayerId }: { playerName: string, answer: string, nextPlayerIndex: number, nextPlayerId: string }) => {
+      console.log(`❌ ${playerName} errou! Resposta: "${answer}" Próximo jogador: index ${nextPlayerIndex}, id ${nextPlayerId}, players length: ${players.length}`);
       setCurrentPlayerIndex(nextPlayerIndex);
       setCurrentPlayerId(nextPlayerId);
       setErrorPlayerName(playerName);
+      setErrorAnswer(answer || '');
       setShowErrorAnswer(true);
       setTimeout(() => {
         setShowErrorAnswer(false);
         setErrorPlayerName('');
-      }, 2000);
+        setErrorAnswer('');
+      }, 3000);
     };
     
     const handleNextCard = ({ currentCard: card, currentPlayerIndex: index, currentPlayerId: playerId }: { currentCard: Card, currentPlayerIndex: number, currentPlayerId: string }) => {
@@ -539,6 +542,9 @@ export default function GamePage() {
                 <strong>{errorPlayerName}</strong> errou!
               </p>
               <p className="text-lg text-center text-gray-600">
+                Resposta: <span className="font-bold text-red-600">"{errorAnswer}"</span>
+              </p>
+              <p className="text-lg text-center text-gray-500 mt-2">
                 Vez do próximo jogador
               </p>
             </div>
@@ -715,6 +721,26 @@ export default function GamePage() {
             </p>
             <p className="text-2xl font-bold text-center text-purple-600">
               {correctAnswerText}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Notificação de Resposta Errada */}
+      {showErrorAnswer && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md mx-4 animate-bounce">
+            <h2 className="text-3xl font-bold text-center text-red-600 mb-4">
+              ✗ ERRADO!
+            </h2>
+            <p className="text-xl text-center text-gray-700 mb-2">
+              <strong>{errorPlayerName}</strong> errou!
+            </p>
+            <p className="text-lg text-center text-gray-600 mb-2">
+              Resposta: <span className="font-bold text-red-600">"{errorAnswer}"</span>
+            </p>
+            <p className="text-lg text-center text-gray-500">
+              Vez do próximo jogador
             </p>
           </div>
         </div>

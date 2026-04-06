@@ -314,7 +314,7 @@ export class GerenciadorJogo {
     }
   }
 
-  validarResposta(idResposta: number, isCorrect: boolean, casas: number): { sucesso: boolean, nomeJogador?: string, respostaCorreta?: string } {
+  validarResposta(idResposta: number, isCorrect: boolean, casas: number): { sucesso: boolean, nomeJogador?: string, respostaCorreta?: string, resposta?: string } {
     if (casas < 1 || casas > 10) return { sucesso: false };
     const respostas = this.getRespostas();
     const resposta = respostas.find(r => r.id === idResposta);
@@ -341,7 +341,7 @@ export class GerenciadorJogo {
       this.revelouEstaTurno = false;
       this.proximoJogador();
       console.log(`✗ ${jogador.nome_jogador} errou`);
-      return { sucesso: true };
+      return { sucesso: true, nomeJogador: jogador.nome_jogador, resposta: resposta.resposta };
     }
   }
 

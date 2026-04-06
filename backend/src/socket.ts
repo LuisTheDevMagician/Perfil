@@ -271,7 +271,8 @@ export function initSocket(httpServer: any) {
           } else {
             console.log('❌ Enviando answer-incorrect com nextPlayerIndex:', getIndiceJogadorTurno());
             io.emit('answer-incorrect', {
-              playerName: gerenciadorJogo.getRespostas().find(r => r.id === answerId)?.nome_jogador,
+              playerName: resultado.nomeJogador,
+              answer: resultado.resposta,
               nextPlayerIndex: getIndiceJogadorTurno(),
               nextPlayerId: getIdJogadorTurno()
             });
