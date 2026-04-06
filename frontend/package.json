@@ -5,9 +5,9 @@
   "type": "module",
   "packageManager": "bun@1.0.0",
   "scripts": {
-    "dev": "bun run --cwd . node server.ts",
+    "dev": "next dev --turbopack",
     "build": "next build",
-    "start": "bun run --cwd . node server.ts",
+    "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {

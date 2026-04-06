@@ -1,8 +1,21 @@
-import type { NextConfig } from "next";
+import os from 'os';
 
-const nextConfig: NextConfig = {
-  // Configuração para permitir requisições cross-origin durante desenvolvimento
-  // Ignora o aviso de cross-origin de dispositivos na mesma rede local
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  allowedDevOrigins: (() => {
+    const interfaces = os.networkInterfaces();
+    const ips = ['localhost', '127.0.0.1'];
+    
+    for (const name of Object.keys(interfaces)) {
+      for (const net of interfaces[name] ?? []) {
+        if (net.family === 'IPv4' && !net.internal && net.address) {
+          ips.push(net.address);
+        }
+      }
+    }
+    return ips;
+  })(),
+
   async headers() {
     return [
       {
