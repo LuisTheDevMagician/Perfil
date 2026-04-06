@@ -1,12 +1,16 @@
 {
   "name": "backend",
   "version": "1.0.50",
+  "packageManager": "bun@1.0.0",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "bun run --watch src/index.ts"
+    "dev": "bun run --watch src/index.ts",
+    "build": "bun build src/index.ts --outdir ./dist",
+    "start": "bun run src/index.ts"
   },
   "dependencies": {
-    "elysia": "latest"
+    "elysia": "latest",
+    "socket.io": "^4.8.1",
+    "@elysiajs/cors": "latest"
   },
   "devDependencies": {
     "bun-types": "latest"
