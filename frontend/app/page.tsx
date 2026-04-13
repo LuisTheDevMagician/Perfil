@@ -13,6 +13,7 @@ import SortIcon from '@mui/icons-material/Sort';
 import StarIcon from '@mui/icons-material/Star';
 import InfoIcon from '@mui/icons-material/Info';
 import PersonIcon from '@mui/icons-material/Person';
+import SettingsIcon from '@mui/icons-material/Settings';
 
 interface Player {
   id: string;
@@ -191,6 +192,14 @@ export default function Home() {
           <div className="mt-6 text-center text-sm text-gray-600">
             <p><CasinoIcon /> Primeiro jogador será o HOST</p>
             <p><EmojiEventsIcon /> Acesse em outros dispositivos na mesma rede</p>
+            <p className="mt-2">
+              <button 
+                onClick={() => router.push('/admin')} 
+                className="text-gray-600 hover:text-purple-600 underline cursor-pointer bg-transparent border-none p-0 text-sm"
+              >
+                <SettingsIcon className="mr-1" /> Área do Administrador
+              </button>
+            </p>
           </div>
         </div>
       </div>

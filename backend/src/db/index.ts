@@ -80,6 +80,32 @@ export function initDatabase() {
     )
   `);
 
+  sqlite.run(`
+    CREATE TABLE IF NOT EXISTS disciplinas (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nome TEXT NOT NULL
+    )
+  `);
+
+  sqlite.run(`
+    CREATE TABLE IF NOT EXISTS temas (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nome TEXT NOT NULL,
+      disciplina_id INTEGER NOT NULL,
+      FOREIGN KEY (disciplina_id) REFERENCES disciplinas(id) ON DELETE CASCADE
+    )
+  `);
+
+  sqlite.run(`
+    CREATE TABLE IF NOT EXISTS cartas (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nome TEXT NOT NULL,
+      tema_id INTEGER NOT NULL,
+      dicas TEXT NOT NULL,
+      FOREIGN KEY (tema_id) REFERENCES temas(id) ON DELETE CASCADE
+    )
+  `);
+
   console.log('✅ Banco de dados inicializado com sucesso');
 }
 

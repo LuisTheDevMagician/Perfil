@@ -460,7 +460,20 @@ export class GerenciadorJogo {
 
   getCartaAtual(): Carta | null {
     if (!this.sessaoAtual) return null;
-    return gameCards[this.sessaoAtual.id_carta_atual] || null;
+    
+    const cartas = queries.buscarTodasCartas();
+    if (cartas.length === 0) {
+      return gameCards[this.sessaoAtual.id_carta_atual] || null;
+    }
+    
+    const carta = cartas[this.sessaoAtual.id_carta_atual];
+    if (!carta) return null;
+    
+    return {
+      id: carta.id,
+      nome: carta.nome,
+      dicas: JSON.parse(carta.dicas)
+    };
   }
 
   getDicasReveladas(): number[] {

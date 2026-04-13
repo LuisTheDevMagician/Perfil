@@ -171,4 +171,127 @@ export const queries = {
     sqlite.prepare('UPDATE sessoes_jogo SET esta_ativa = 0').run();
     console.log('🧹 Sessão limpiada do banco de dados');
   },
+
+  criarDisciplina: (nome: string): number => {
+    const stmt = sqlite.prepare('INSERT INTO disciplinas (nome) VALUES (?)');
+    const result = stmt.run(nome);
+    return Number(result.lastInsertRowid);
+  },
+
+  listarDisciplinas: () => {
+    const stmt = sqlite.prepare('SELECT * FROM disciplinas ORDER BY nome');
+    return stmt.all() as any[];
+  },
+
+  buscarDisciplinaPorId: (id: number) => {
+    const stmt = sqlite.prepare('SELECT * FROM disciplinas WHERE id = ?');
+    return stmt.get(id) as any;
+  },
+
+  atualizarDisciplina: (id: number, nome: string) => {
+    const stmt = sqlite.prepare('UPDATE disciplinas SET nome = ? WHERE id = ?');
+    return stmt.run(nome, id);
+  },
+
+  excluirDisciplina: (id: number) => {
+    const temas = sqlite.prepare('SELECT id FROM temas WHERE disciplina_id = ?').all(id) as any[];
+    for (const tema of temas) {
+      sqlite.prepare('DELETE FROM cartas WHERE tema_id = ?').run(tema.id);
+    }
+    sqlite.prepare('DELETE FROM temas WHERE disciplina_id = ?').run(id);
+    sqlite.prepare('DELETE FROM disciplinas WHERE id = ?').run(id);
+  },
+
+  criarTema: (nome: string, disciplinaId: number): number => {
+    const stmt = sqlite.prepare('INSERT INTO temas (nome, disciplina_id) VALUES (?, ?)');
+    const result = stmt.run(nome, disciplinaId);
+    return Number(result.lastInsertRowid);
+  },
+
+  listarTemas: () => {
+    const stmt = sqlite.prepare(`
+      SELECT t.*, d.nome as disciplina_nome 
+      FROM temas t 
+      LEFT JOIN disciplinas d ON t.disciplina_id = d.id 
+      ORDER BY d.nome, t.nome
+    `);
+    return stmt.all() as any[];
+  },
+
+  buscarTemaPorId: (id: number) => {
+    const stmt = sqlite.prepare('SELECT * FROM temas WHERE id = ?');
+    return stmt.get(id) as any;
+  },
+
+  atualizarTema: (id: number, nome: string, disciplinaId: number) => {
+    const stmt = sqlite.prepare('UPDATE temas SET nome = ?, disciplina_id = ? WHERE id = ?');
+    return stmt.run(nome, disciplinaId, id);
+  },
+
+  excluirTema: (id: number) => {
+    sqlite.prepare('DELETE FROM cartas WHERE tema_id = ?').run(id);
+    sqlite.prepare('DELETE FROM temas WHERE id = ?').run(id);
+  },
+
+  criarCarta: (nome: string, temaId: number, dicas: string[]): number => {
+    if (dicas.length !== 10) {
+      throw new Error('Carta deve ter exatamente 10 dicas');
+    }
+    const stmt = sqlite.prepare('INSERT INTO cartas (nome, tema_id, dicas) VALUES (?, ?, ?)');
+    const result = stmt.run(nome, temaId, JSON.stringify(dicas));
+    return Number(result.lastInsertRowid);
+  },
+
+  listarCartas: () => {
+    const stmt = sqlite.prepare(`
+      SELECT c.*, t.nome as tema_nome, d.nome as disciplina_nome, d.id as disciplina_id
+      FROM cartas c
+      LEFT JOIN temas t ON c.tema_id = t.id
+      LEFT JOIN disciplinas d ON t.disciplina_id = d.id
+      ORDER BY d.nome, t.nome, c.nome
+    `);
+    return stmt.all() as any[];
+  },
+
+  buscarCartaPorId: (id: number) => {
+    const stmt = sqlite.prepare('SELECT * FROM cartas WHERE id = ?');
+    return stmt.get(id) as any;
+  },
+
+  buscarCartasPorTema: (temaId: number) => {
+    const stmt = sqlite.prepare('SELECT * FROM cartas WHERE tema_id = ?');
+    return stmt.all(temaId) as any[];
+  },
+
+  buscarCartasPorDisciplina: (disciplinaId: number) => {
+    const stmt = sqlite.prepare(`
+      SELECT c.* FROM cartas c
+      JOIN temas t ON c.tema_id = t.id
+      WHERE t.disciplina_id = ?
+    `);
+    return stmt.all(disciplinaId) as any[];
+  },
+
+  buscarTodasCartas: () => {
+    const stmt = sqlite.prepare(`
+      SELECT c.*, t.nome as tema_nome, d.nome as disciplina_nome
+      FROM cartas c
+      LEFT JOIN temas t ON c.tema_id = t.id
+      LEFT JOIN disciplinas d ON t.disciplina_id = d.id
+    `);
+    return stmt.all() as any[];
+  },
+
+  atualizarCarta: (id: number, nome: string, temaId: number, dicas: string[]) => {
+    if (dicas.length !== 10) {
+      throw new Error('Carta deve ter exatamente 10 dicas');
+    }
+    const stmt = sqlite.prepare('UPDATE cartas SET nome = ?, tema_id = ?, dicas = ? WHERE id = ?');
+    return stmt.run(nome, temaId, JSON.stringify(dicas), id);
+  },
+
+  excluirCarta: (id: number) => {
+    const stmt = sqlite.prepare('DELETE FROM cartas WHERE id = ?');
+    return stmt.run(id);
+  },
 };
