@@ -30,6 +30,7 @@ function mapDbToSessao(row: any): SessaoJogo {
   return {
     id: row.id ?? 0,
     nome_host: row.nomeHost ?? row.nome_host ?? '',
+    tema_id: row.temaId ?? row.tema_id ?? null,
     id_carta_atual: row.idCartaAtual ?? row.id_carta_atual ?? 0,
     dicas_reveladas: row.dicasReveladas ?? row.dicas_reveladas ?? '[]',
     id_jogador_atual: row.idJogadorAtual ?? row.id_jogador_atual ?? 0,
@@ -82,6 +83,7 @@ export class GerenciadorJogo {
     this.sessaoAtual = {
       id: idSessao,
       nome_host: nomeHost,
+      tema_id: null,
       id_carta_atual: 0,
       dicas_reveladas: '[]',
       id_jogador_atual: 0,
@@ -95,6 +97,18 @@ export class GerenciadorJogo {
     this.revelouEstaTurno = false;
     console.log('✅ Sessão criada:', idSessao);
     return idSessao;
+  }
+
+  definirTema(temaId: number) {
+    if (!this.sessaoAtual) return;
+    this.sessaoAtual.tema_id = temaId;
+    this.sessaoAtual.id_carta_atual = 0;
+    queries.atualizarSessaoTema(this.sessaoAtual.id, temaId);
+    console.log('✅ Tema definido:', temaId);
+  }
+
+  getTemaAtual(): number | null {
+    return this.sessaoAtual?.tema_id ?? null;
   }
 
   getSessaoAtual(): SessaoJogo | null {
@@ -363,11 +377,24 @@ export class GerenciadorJogo {
   private proximaCarta() {
     if (!this.sessaoAtual) return;
     
+    const temaId = this.sessaoAtual.tema_id;
+    let totalCartas = 0;
+    
+    if (temaId) {
+      const cartas = queries.buscarCartasPorTema(temaId);
+      totalCartas = cartas.length;
+    }
+    
+    if (totalCartas === 0) {
+      const gameCards = (require('./models') as any).gameCards;
+      totalCartas = gameCards.length;
+    }
+    
     this.sessaoAtual.id_carta_atual++;
     this.sessaoAtual.dicas_reveladas = '[]';
     this.revelouEstaTurno = false;
 
-    if (this.sessaoAtual.id_carta_atual >= gameCards.length) {
+    if (this.sessaoAtual.id_carta_atual >= totalCartas) {
       this.encerrarJogo();
       return;
     }
@@ -461,8 +488,17 @@ export class GerenciadorJogo {
   getCartaAtual(): Carta | null {
     if (!this.sessaoAtual) return null;
     
-    const cartas = queries.buscarTodasCartas();
+    const temaId = this.sessaoAtual.tema_id;
+    let cartas;
+    
+    if (temaId) {
+      cartas = queries.buscarCartasPorTema(temaId);
+    } else {
+      cartas = queries.buscarTodasCartas();
+    }
+    
     if (cartas.length === 0) {
+      const gameCards = (require('./models') as any).gameCards;
       return gameCards[this.sessaoAtual.id_carta_atual] || null;
     }
     

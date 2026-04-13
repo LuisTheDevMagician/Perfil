@@ -12,13 +12,20 @@ interface Carta {
   tema_id: number;
   tema_nome: string;
   disciplina_nome: string;
+  disciplina_id: number;
   dicas: string;
 }
 
 interface Tema {
   id: number;
   nome: string;
+  disciplina_id: number;
   disciplina_nome: string;
+}
+
+interface Disciplina {
+  id: number;
+  nome: string;
 }
 
 const API_URL = 'http://localhost:3001/api';
@@ -26,16 +33,21 @@ const API_URL = 'http://localhost:3001/api';
 export function CartasTab() {
   const [cartas, setCartas] = useState<Carta[]>([]);
   const [temas, setTemas] = useState<Tema[]>([]);
+  const [disciplinas, setDisciplinas] = useState<Disciplina[]>([]);
   const [open, setOpen] = useState(false);
   const [editando, setEditando] = useState<Carta | null>(null);
   const [nome, setNome] = useState('');
+  const [disciplinaId, setDisciplinaId] = useState<number>(0);
   const [temaId, setTemaId] = useState<number>(0);
   const [dicas, setDicas] = useState<string[]>(Array(10).fill(''));
 
+  const temasFiltrados = temas.filter(t => t.disciplina_id === disciplinaId);
+
   const fetchData = async () => {
-    const [cartasRes, temasRes] = await Promise.all([
+    const [cartasRes, temasRes, discRes] = await Promise.all([
       fetch(`${API_URL}/cartas`),
-      fetch(`${API_URL}/temas`)
+      fetch(`${API_URL}/temas`),
+      fetch(`${API_URL}/disciplinas`)
     ]);
     const cartasData = await cartasRes.json();
     setCartas(cartasData.map((c: any) => ({
@@ -43,6 +55,7 @@ export function CartasTab() {
       dicas: typeof c.dicas === 'string' ? c.dicas : JSON.stringify(c.dicas || [])
     })));
     setTemas(await temasRes.json());
+    setDisciplinas(await discRes.json());
   };
 
   useEffect(() => {
@@ -53,6 +66,7 @@ export function CartasTab() {
     if (carta) {
       setEditando(carta);
       setNome(carta.nome);
+      setDisciplinaId(carta.disciplina_id);
       setTemaId(carta.tema_id);
       try {
         const parsedDicas = JSON.parse(carta.dicas);
@@ -63,13 +77,27 @@ export function CartasTab() {
     } else {
       setEditando(null);
       setNome('');
-      setTemaId(temas[0]?.id || 0);
+      setDisciplinaId(disciplinas[0]?.id || 0);
+      setTemaId(0);
       setDicas(Array(10).fill(''));
     }
     setOpen(true);
   };
 
+  const handleDisciplinaChange = (newDisciplinaId: number) => {
+    setDisciplinaId(newDisciplinaId);
+    setTemaId(0);
+  };
+
   const handleSalvar = async () => {
+    if (!nome.trim()) {
+      alert('Nome é obrigatório');
+      return;
+    }
+    if (!temaId) {
+      alert('Tema é obrigatório');
+      return;
+    }
     if (dicas.some(d => !d.trim())) {
       alert('Todas as 10 dicas devem ser preenchidas');
       return;
@@ -160,35 +188,47 @@ export function CartasTab() {
               sx={{ mb: 2 }}
             />
             <FormControl fullWidth sx={{ mb: 2 }}>
+              <InputLabel>Disciplina</InputLabel>
+              <Select
+                value={disciplinaId}
+                label="Disciplina"
+                onChange={(e) => handleDisciplinaChange(e.target.value as number)}
+              >
+                {disciplinas.map((d) => (
+                  <MenuItem key={d.id} value={d.id}>{d.nome}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth sx={{ mb: 2 }}>
               <InputLabel>Tema</InputLabel>
               <Select
                 value={temaId}
                 label="Tema"
                 onChange={(e) => setTemaId(e.target.value as number)}
+                disabled={!disciplinaId}
               >
-                {temas.map((t) => (
-                  <MenuItem key={t.id} value={t.id}>{t.nome} ({t.disciplina_nome})</MenuItem>
+                {temasFiltrados.map((t) => (
+                  <MenuItem key={t.id} value={t.id}>{t.nome}</MenuItem>
                 ))}
               </Select>
             </FormControl>
             <Typography variant="h6" sx={{ mb: 1 }}>10 Dicas:</Typography>
-            <Grid container spacing={1}>
+            <div className="space-y-2">
               {dicas.map((dica, index) => (
-                <Grid item xs={12} key={index}>
-                  <TextField
-                    fullWidth
-                    label={`Dica ${index + 1}`}
-                    value={dica}
-                    onChange={(e) => {
-                      const newDicas = [...dicas];
-                      newDicas[index] = e.target.value;
-                      setDicas(newDicas);
-                    }}
-                    size="small"
-                  />
-                </Grid>
+                <TextField
+                  key={index}
+                  fullWidth
+                  label={`Dica ${index + 1}`}
+                  value={dica}
+                  onChange={(e) => {
+                    const newDicas = [...dicas];
+                    newDicas[index] = e.target.value;
+                    setDicas(newDicas);
+                  }}
+                  size="small"
+                />
               ))}
-            </Grid>
+            </div>
           </Box>
         </DialogContent>
         <DialogActions>

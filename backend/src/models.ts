@@ -27,6 +27,7 @@ export interface RespostaPendente {
 export interface SessaoJogo {
   id: number;
   nome_host: string;
+  tema_id: number | null;
   id_carta_atual: number;
   dicas_reveladas: string;
   id_jogador_atual: number;

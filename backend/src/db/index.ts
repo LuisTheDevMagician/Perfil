@@ -14,6 +14,7 @@ export function initDatabase() {
     CREATE TABLE IF NOT EXISTS sessoes_jogo (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       nome_host TEXT NOT NULL,
+      tema_id INTEGER,
       id_carta_atual INTEGER DEFAULT 0,
       dicas_reveladas TEXT DEFAULT '[]',
       id_jogador_atual INTEGER DEFAULT 0,
@@ -25,6 +26,12 @@ export function initDatabase() {
 
   try {
     sqlite.run('ALTER TABLE sessoes_jogo ADD COLUMN revelou_esta_turno INTEGER DEFAULT 0');
+  } catch {
+    // Coluna já existe
+  }
+
+  try {
+    sqlite.run('ALTER TABLE sessoes_jogo ADD COLUMN tema_id INTEGER');
   } catch {
     // Coluna já existe
   }

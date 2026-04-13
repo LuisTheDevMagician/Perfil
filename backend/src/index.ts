@@ -17,10 +17,12 @@ process.on('SIGINT', () => {
 // Run seed on startup
 seedInitialData();
 
+// API routes for disciplinas and temas (public for game selection)
+
 function parseBody(req: any): Promise<any> {
   return new Promise((resolve) => {
     let body = '';
-    req.on('data', chunk => body += chunk);
+    req.on('data', (chunk: Buffer) => body += chunk.toString());
     req.on('end', () => {
       try {
         resolve(body ? JSON.parse(body) : {});

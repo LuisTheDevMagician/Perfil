@@ -294,4 +294,9 @@ export const queries = {
     const stmt = sqlite.prepare('DELETE FROM cartas WHERE id = ?');
     return stmt.run(id);
   },
+
+  atualizarSessaoTema: (id: number, temaId: number) => {
+    const stmt = sqlite.prepare('UPDATE sessoes_jogo SET tema_id = ? WHERE id = ?');
+    return stmt.run(temaId, id);
+  },
 };

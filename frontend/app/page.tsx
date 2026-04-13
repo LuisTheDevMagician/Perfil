@@ -33,6 +33,15 @@ export default function Home() {
   const [error, setError] = useState('');
   const [isConnecting, setIsConnecting] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState('Conectando...');
+  
+  // Selection states for host
+  const [disciplinas, setDisciplinas] = useState<{id: number, nome: string}[]>([]);
+  const [temas, setTemas] = useState<{id: number, nome: string, disciplina_id: number}[]>([]);
+  const [disciplinaSelecionada, setDisciplinaSelecionada] = useState<number>(0);
+  const [temaSelecionado, setTemaSelecionado] = useState<number>(0);
+  const [themeSelected, setThemeSelected] = useState(false);
+  const [disciplinaNome, setDisciplinaNome] = useState('');
+  const [temaNome, setTemaNome] = useState('');
 
   // Conectar ao socket ao montar o componente
   useEffect(() => {
@@ -91,9 +100,15 @@ export default function Home() {
       setPlayers(orderedPlayers);
     });
 
+    socket.on('theme-selected', ({ temaNome, disciplinaNome }: { temaNome: string, disciplinaNome: string }) => {
+      console.log('Theme selected received:', temaNome, disciplinaNome);
+      setThemeSelected(true);
+      setTemaNome(temaNome);
+      setDisciplinaNome(disciplinaNome);
+    });
+
     socket.on('game-started', () => {
       console.log('Jogo iniciado! Redirecionando...');
-      // Socket singleton persiste através da navegação
       router.push('/game');
     });
 
@@ -105,7 +120,6 @@ export default function Home() {
       setError('Este nome já está em uso. Escolha outro.');
     });
 
-    // Não desconectar o socket ao desmontar - ele é reutilizado
     return () => {
       console.log('Lobby desmontado, socket mantido para a página do jogo');
     };
@@ -136,10 +150,33 @@ export default function Home() {
     socketRef.current?.emit('start-game');
   };
 
+  // Fetch disciplinas and temas when joined as host
+  useEffect(() => {
+    if (joined && currentPlayer?.isHost) {
+      Promise.all([
+        fetch('http://localhost:3001/api/disciplinas').then(r => r.json()),
+        fetch('http://localhost:3001/api/temas').then(r => r.json())
+      ]).then(([disc, temasData]) => {
+        setDisciplinas(disc);
+        setTemas(temasData);
+      });
+    }
+  }, [joined, currentPlayer?.isHost]);
+
+  const temasFiltrados = temas.filter(t => t.disciplina_id === disciplinaSelecionada);
+
+  const handleSelectTema = () => {
+    console.log('Selecting theme:', temaSelecionado);
+    if (temaSelecionado) {
+      socketRef.current?.emit('select-theme', temaSelecionado);
+    }
+  };
+
   // Verificar se todos os jogadores (exceto o host) rolaram os dados
   const nonHostPlayers = players.filter(p => !p.isHost);
   const allPlayersRolled = nonHostPlayers.length > 0 && nonHostPlayers.every(p => p.diceRoll !== null);
 
+  // ============ PRIMEIRO RETURN - TELA DE LOGIN ============
   if (!joined) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 flex items-center justify-center p-4">
@@ -147,7 +184,6 @@ export default function Home() {
           <h1 className="text-4xl font-bold text-center mb-2 text-gray-800">Jogo Perfil</h1>
           <p className="text-center text-gray-600 mb-8">Quiz Multiplayer - Até 11 jogadores</p>
           
-          {/* Indicador de Status da Conexão */}
           <div className={`mb-4 p-3 rounded-lg text-center text-sm ${
             isConnecting 
               ? 'bg-yellow-100 text-yellow-800' 
@@ -206,6 +242,7 @@ export default function Home() {
     );
   }
 
+  // ============ SEGUNDO RETURN - LOBBY ============
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 p-4">
       <div className="max-w-4xl mx-auto">
@@ -254,38 +291,103 @@ export default function Home() {
             </div>
           </div>
 
+          {/* Configuração do Tema - apenas para HOST */}
+          {currentPlayer?.isHost && !themeSelected && disciplinas.length > 0 ? (
+            <div className="bg-purple-50 rounded-xl p-4 mb-4">
+              <h3 className="font-bold text-gray-800 mb-3">Configure o Jogo</h3>
+              
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Disciplina</label>
+                  <select
+                    value={disciplinaSelecionada}
+                    onChange={(e) => {
+                      setDisciplinaSelecionada(Number(e.target.value));
+                      setTemaSelecionado(0);
+                    }}
+                    className="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:border-purple-500 focus:outline-none text-gray-900 bg-white"
+                    style={{ color: '#000000' }}
+                  >
+                    <option value={0} style={{ color: '#000000' }}>Selecione uma disciplina</option>
+                    {disciplinas.map(d => (
+                      <option key={d.id} value={d.id} style={{ color: '#000000' }}>{d.nome}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tema</label>
+                  <select
+                    value={temaSelecionado}
+                    onChange={(e) => setTemaSelecionado(Number(e.target.value))}
+                    disabled={!disciplinaSelecionada}
+                    className="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:border-purple-500 focus:outline-none disabled:opacity-50 text-gray-900 bg-white"
+                    style={{ color: disciplinaSelecionada ? '#000000' : '#999999' }}
+                  >
+                    <option value={0} style={{ color: '#000000' }}>Selecione um tema</option>
+                    {temasFiltrados.map(t => (
+                      <option key={t.id} value={t.id} style={{ color: '#000000' }}>{t.nome}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <button
+                  onClick={handleSelectTema}
+                  disabled={!temaSelecionado}
+                  className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white font-bold py-2 px-6 rounded-lg transition-colors duration-200"
+                >
+                  Confirmar Tema
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          {/* Tema Selecionado - mostrar quando selecionado */}
+          {themeSelected ? (
+            <div className="bg-green-50 rounded-xl p-4 mb-4">
+              <p className="text-green-700 font-semibold">
+                Tema selecionado: {temaNome} ({disciplinaNome})
+              </p>
+            </div>
+          ) : null}
+
           {/* Controles */}
           <div className="space-y-3">
-            {/* Botão Rolar Dados - apenas para jogadores (não-hosts) que ainda não rolaram */}
-            {currentPlayer?.isHost === false && currentPlayer?.diceRoll === null && (
+            {/* Botão Rolar Dados - apenas para jogadores não-host */}
+            {currentPlayer?.isHost === false && currentPlayer?.diceRoll === null ? (
               <button
                 onClick={handleRollDice}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg flex items-center justify-center gap-2"
               >
                 <CasinoIcon /> Rolar Dados
               </button>
-            )}
+            ) : null}
 
             {/* Botões do HOST */}
-            {currentPlayer?.isHost && (
-              <>
-                {allPlayersRolled && (
+            {currentPlayer?.isHost ? (
+              <div className="space-y-3">
+                {allPlayersRolled ? (
                   <button
                     onClick={handleSetPlayOrder}
                     className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg flex items-center justify-center gap-2"
                   >
                     <SortIcon /> Definir Ordem de Jogo
                   </button>
-                )}
+                ) : null}
                 
                 <button
                   onClick={handleStartGame}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg flex items-center justify-center gap-2"
+                  disabled={!themeSelected}
+                  className={`w-full font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg flex items-center justify-center gap-2 ${
+                    themeSelected 
+                      ? 'bg-green-600 hover:bg-green-700 text-white' 
+                      : 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                  }`}
                 >
-                  <PlayArrowIcon /> Iniciar Partida
+                  <PlayArrowIcon /> {themeSelected ? 'Iniciar Partida' : 'Selecione um tema primeiro'}
                 </button>
-              </>
-            )}
+              </div>
+            ) : null}
           </div>
 
           {/* Instruções */}

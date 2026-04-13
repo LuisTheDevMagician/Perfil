@@ -1,5 +1,6 @@
 import { Server as SocketIOServer } from 'socket.io';
 import { gerenciadorJogo } from './game';
+import { queries } from './db/queries';
 import { validarNome, validarResposta, validarIndiceDica, validarCasas } from './schemas/jogo.schema';
 
 let io: SocketIOServer;
@@ -126,6 +127,30 @@ export function initSocket(httpServer: any) {
         io.emit('play-order-set', gerenciadorJogo.getJogadores(getSocketIdsAtivos()).map(mapJogadorParaFrontend));
       } catch (error: any) {
         console.error('Erro em set-play-order:', error.message);
+      }
+    });
+
+    socket.on('select-theme', (data: unknown) => {
+      try {
+        const jogador = gerenciadorJogo.getJogadorPorSocket(socket.id);
+        if (!jogador || !jogador.e_host) return;
+
+        const temaId = typeof data === 'number' ? data : (data as any)?.temaId;
+        if (!temaId) return;
+
+        gerenciadorJogo.definirTema(temaId);
+        
+        const tema = queries.buscarTemaPorId(temaId);
+        const disciplina = tema ? queries.buscarDisciplinaPorId(tema.disciplina_id) : null;
+        
+        io.emit('theme-selected', {
+          temaId,
+          temaNome: tema?.nome || '',
+          disciplinaId: tema?.disciplina_id || 0,
+          disciplinaNome: disciplina?.nome || ''
+        });
+      } catch (error: any) {
+        console.error('Erro em select-theme:', error.message);
       }
     });
 
@@ -260,9 +285,18 @@ export function initSocket(httpServer: any) {
             });
 
             setTimeout(() => {
-              if (gerenciadorJogo.getJogoIniciado()) {
+              const nextCard = gerenciadorJogo.getCartaAtual();
+              if (!nextCard) {
+                io.emit('victory-state', {
+                  ranking: gerenciadorJogo.obterRankingFinal().map(j => ({
+                    id: j.id_socket,
+                    name: j.nome_jogador,
+                    score: j.pontuacao,
+                  }))
+                });
+              } else if (gerenciadorJogo.getJogoIniciado()) {
                 io.emit('next-card', {
-                  currentCard: gerenciadorJogo.getCartaAtual(),
+                  currentCard: nextCard,
                   currentPlayerIndex: getIndiceJogadorTurno(),
                   currentPlayerId: getIdJogadorTurno(),
                 });
@@ -300,9 +334,18 @@ export function initSocket(httpServer: any) {
           io.emit('answer-revealed', { correctAnswer: respostaCorreta });
 
           setTimeout(() => {
-            if (gerenciadorJogo.getJogoIniciado()) {
+            const nextCard = gerenciadorJogo.getCartaAtual();
+            if (!nextCard) {
+              io.emit('victory-state', {
+                ranking: gerenciadorJogo.obterRankingFinal().map(j => ({
+                  id: j.id_socket,
+                  name: j.nome_jogador,
+                  score: j.pontuacao,
+                }))
+              });
+            } else if (gerenciadorJogo.getJogoIniciado()) {
               io.emit('next-card', {
-                currentCard: gerenciadorJogo.getCartaAtual(),
+                currentCard: nextCard,
                 currentPlayerIndex: getIndiceJogadorTurno(),
                 currentPlayerId: getIdJogadorTurno(),
               });
