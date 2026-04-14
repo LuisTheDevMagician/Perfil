@@ -95,6 +95,14 @@ export function initSocket(httpServer: any) {
               currentPlayerId: getIdJogadorTurno(),
             });
           }
+          return;
+        }
+
+        const jogadores = gerenciadorJogo.getJogadores(getSocketIdsAtivos());
+        if (jogadores.length > 0) {
+          socket.emit('lobby-state', {
+            players: jogadores.map(mapJogadorParaFrontend)
+          });
         }
       } catch (error: any) {
         console.error('Erro em request-game-state:', error.message);
@@ -375,8 +383,9 @@ export function initSocket(httpServer: any) {
         if (!jogador || !jogador.e_host) return;
 
         gerenciadorJogo.sairDaTelaDeVitoria();
-        io.emit('lobby-cleared');
-        console.log('👋 Host saiu da tela de vitória - lobby resetado');
+        
+        io.emit('return-to-lobby', gerenciadorJogo.getJogadores(getSocketIdsAtivos()).map(mapJogadorParaFrontend));
+        console.log('👋 Host saiu da tela de vitória - todos voltando ao lobby');
       } catch (error: any) {
         console.error('Erro em exit-victory-screen:', error.message);
       }

@@ -6,12 +6,8 @@ import { useRouter } from 'next/navigation';
 import { Socket } from 'socket.io-client';
 import { getSocket, getSessionId } from '@/lib/socket';
 import { Card } from '@/lib/cards';
-import CasinoIcon from '@mui/icons-material/Casino';
-import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import StarIcon from '@mui/icons-material/Star';
 import LockIcon from '@mui/icons-material/Lock';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import VisibilityIcon from '@mui/icons-material/Visibility';
@@ -20,8 +16,6 @@ import CheckIcon from '@mui/icons-material/Check';
 import SendIcon from '@mui/icons-material/Send';
 import TimerIcon from '@mui/icons-material/Timer';
 import SportsScoreIcon from '@mui/icons-material/SportsScore';
-import MilitaryTechIcon from '@mui/icons-material/MilitaryTech';
-import PersonIcon from '@mui/icons-material/Person';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import WhatshotIcon from '@mui/icons-material/Whatshot';
@@ -51,6 +45,7 @@ export default function GamePage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
   const [isHost, setIsHost] = useState(false);
+  const isHostRef = useRef(false);
   const [myId, setMyId] = useState<string>('');
   const [playerAnswer, setPlayerAnswer] = useState('');
   const [answers, setAnswers] = useState<Answer[]>([]);
@@ -61,13 +56,9 @@ export default function GamePage() {
   const [errorAnswer, setErrorAnswer] = useState('');
   const [correctAnswerText, setCorrectAnswerText] = useState('');
   const [winnerName, setWinnerName] = useState('');
-  const [gameEnded, setGameEnded] = useState(false);
-  const [showVictoryScreen, setShowVictoryScreen] = useState(false);
-  const [ranking, setRanking] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasAnswered, setHasAnswered] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isRevealing, setIsRevealing] = useState(false);
   const [currentPlayerId, setCurrentPlayerId] = useState<string>('');
   const isRevealingRef = useRef(false);
 
@@ -100,18 +91,18 @@ export default function GamePage() {
       const currentId = socket.id;
       const me = deduplicated.find((p: Player) => p.id === currentId);
       setIsHost(me?.isHost || false);
+      isHostRef.current = me?.isHost || false;
       setMyId(currentId || '');
     };
     
     const handleClueRevealed = ({ revealedClueIndices: newRevealed, currentPlayerIndex: newIndex, currentPlayerId: newPlayerId }: { revealedClueIndices: number[], currentPlayerIndex: number, currentPlayerId: string }) => {
-      console.log('📨 Evento clue-revealed recebido:', { newRevealed, newIndex, newPlayerId, playersLength: players.length });
+      console.log('📨 Evento clue-revealed recebido:', { newRevealed, newIndex, newPlayerId });
       setRevealedClueIndices(newRevealed);
       setCurrentPlayerIndex(newIndex);
       setCurrentPlayerId(newPlayerId);
       setShowErrorAnswer(false);
       
       isRevealingRef.current = false;
-      setIsRevealing(false);
     };
     
     const handleNewAnswer = (answer: Answer) => {
@@ -142,7 +133,7 @@ export default function GamePage() {
     };
     
     const handleAnswerIncorrect = ({ playerName, answer, nextPlayerIndex, nextPlayerId }: { playerName: string, answer: string, nextPlayerIndex: number, nextPlayerId: string }) => {
-      console.log(`❌ ${playerName} errou! Resposta: "${answer}" Próximo jogador: index ${nextPlayerIndex}, id ${nextPlayerId}, players length: ${players.length}`);
+      console.log(`❌ ${playerName} errou! Resposta: "${answer}" Próximo jogador: index ${nextPlayerIndex}, id ${nextPlayerId}`);
       setCurrentPlayerIndex(nextPlayerIndex);
       setCurrentPlayerId(nextPlayerId);
       setErrorPlayerName(playerName);
@@ -165,19 +156,13 @@ export default function GamePage() {
       setAnswers([]);
       setHasAnswered(false);
       isRevealingRef.current = false;
-      setIsRevealing(false);
     };
     
     const handleGameEnded = ({ ranking: finalRanking }: { ranking: Player[] }) => {
       console.log('🏆 Jogo encerrado! Ranking:', finalRanking);
-      setGameEnded(true);
-      setShowVictoryScreen(true);
-      setRanking(finalRanking);
-    };
-    
-    const handleLobbyCleared = () => {
-      console.log('🔄 Lobby foi limpo, voltando para a página inicial');
-      router.push('/');
+      localStorage.setItem('perfil_ranking', JSON.stringify(finalRanking));
+      localStorage.setItem('perfil_isHost', isHostRef.current ? 'true' : 'false');
+      router.push('/victory');
     };
     
     const handleAnswersUpdated = (updatedAnswers: Answer[]) => {
@@ -194,7 +179,7 @@ export default function GamePage() {
     };
     
     const handleGameRestarted = () => {
-      router.push('/');
+      router.push('/lobby');
     };
 
     socket.on('connect', handleConnect);
@@ -209,9 +194,6 @@ export default function GamePage() {
     socket.on('answers-updated', handleAnswersUpdated);
     socket.on('answer-revealed', handleAnswerRevealed);
     socket.on('game-restarted', handleGameRestarted);
-    socket.on('lobby-cleared', handleLobbyCleared);
-    
-    socketRef.current = socket;
     
     if (socket.connected) {
       handleConnect();
@@ -230,7 +212,6 @@ export default function GamePage() {
       socket.off('answers-updated');
       socket.off('answer-revealed');
       socket.off('game-restarted');
-      socket.off('lobby-cleared');
       socket.off('connect', handleConnect);
     };
   }, [router]);
@@ -239,7 +220,6 @@ export default function GamePage() {
     console.log('👆 handleRevealClue chamado, myId:', myId, 'currentPlayerIndex:', currentPlayerIndex, 'players:', players.map(p => ({ id: p.id, name: p.name })));
     socketRef.current?.emit('pass-turn');
     isRevealingRef.current = false;
-    setIsRevealing(false);
   };
 
   const handleRevealSpecificClue = (clueIndex: number) => {
@@ -256,7 +236,6 @@ export default function GamePage() {
     
     // Marcar imediatamente como revelando (síncrono para bloquear cliques rápidos)
     isRevealingRef.current = true;
-    setIsRevealing(true); // Estado para UI
     console.log('✅ Revelando dica', clueIndex);
     
     socketRef.current?.emit('reveal-clue', clueIndex); // Enviar índice da dica clicada
@@ -272,7 +251,6 @@ export default function GamePage() {
     setPlayerAnswer('');
     setHasAnswered(true);
     isRevealingRef.current = false;
-    setIsRevealing(false);
     
     // Liberar após 1 segundo (segurança)
     setTimeout(() => setIsSubmitting(false), 1000);
@@ -291,14 +269,6 @@ export default function GamePage() {
     }
   };
 
-  const handleRestartGame = () => {
-    socketRef.current?.emit('restart-game');
-  };
-
-  const handleExitVictoryScreen = () => {
-    socketRef.current?.emit('exit-victory-screen');
-  };
-
   const currentPlayer = players[currentPlayerIndex];
 
   // Tela de carregamento
@@ -310,76 +280,6 @@ export default function GamePage() {
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Carregando jogo...</h2>
           <p className="text-gray-600">Aguarde um momento</p>
         </div>
-      </div>
-    );
-  }
-
-  // Tela de fim de jogo
-  if (showVictoryScreen) {
-    const rankingOrdenado = [...ranking].sort((a, b) => b.score - a.score);
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full">
-          <h1 className="text-4xl font-bold text-center mb-6 text-gray-800"><EmojiEventsIcon className="mr-2" /> Fim de Jogo!</h1>
-          
-          <div className="bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-xl p-6 mb-6">
-            <h2 className="text-2xl font-bold text-center text-white mb-2"><MilitaryTechIcon /> Vencedor</h2>
-            <p className="text-3xl font-bold text-center text-white">{rankingOrdenado[0]?.name}</p>
-            <p className="text-xl text-center text-white mt-2">{rankingOrdenado[0]?.score} pontos</p>
-          </div>
-
-          <div className="space-y-3 mb-6">
-            <h3 className="text-xl font-bold text-gray-800 text-center mb-4">Ranking Final</h3>
-            {rankingOrdenado.map((player, index) => (
-              <div
-                key={player.id}
-                className={`flex items-center justify-between p-4 rounded-lg ${
-                  index === 0 ? 'bg-yellow-100 border-2 border-yellow-500' :
-                  index === 1 ? 'bg-gray-100 border-2 border-gray-400' :
-                  index === 2 ? 'bg-orange-100 border-2 border-orange-400' :
-                  'bg-gray-50 border border-gray-200'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl font-bold text-gray-700">#{index + 1}</span>
-                  <span className="text-xl font-semibold text-gray-800">{player.name}</span>
-                </div>
-                <span className="text-2xl font-bold text-gray-700">{player.score} pts</span>
-              </div>
-            ))}
-          </div>
-
-          {isHost && (
-            <div className="flex gap-3">
-              <button
-                onClick={handleRestartGame}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg flex items-center justify-center gap-2"
-              >
-                <RefreshIcon /> Jogar Novamente
-              </button>
-              <button
-                onClick={handleExitVictoryScreen}
-                className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg flex items-center justify-center gap-2"
-              >
-                <ExitToAppIcon /> Sair para o Lobby
-              </button>
-            </div>
-          )}
-          
-          {!isHost && (
-            <div className="text-center text-gray-600">
-              <p>Aguarde o host decidir o próximo passo...</p>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  if (!currentCard) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 flex items-center justify-center">
-        <div className="text-white text-2xl font-bold">Carregando jogo...</div>
       </div>
     );
   }
@@ -562,7 +462,7 @@ export default function GamePage() {
                 <strong>{errorPlayerName}</strong> errou!
               </p>
               <p className="text-lg text-center text-gray-600">
-                Resposta: <span className="font-bold text-red-600">"{errorAnswer}"</span>
+                Resposta: <span className="font-bold text-red-600">&quot;{errorAnswer}&quot;</span>
               </p>
               <p className="text-lg text-center text-gray-500 mt-2">
                 Vez do próximo jogador
@@ -764,7 +664,7 @@ export default function GamePage() {
               <strong>{errorPlayerName}</strong> errou!
             </p>
             <p className="text-lg text-center text-gray-600 mb-2">
-              Resposta: <span className="font-bold text-red-600">"{errorAnswer}"</span>
+              Resposta: <span className="font-bold text-red-600">&quot;{errorAnswer}&quot;</span>
             </p>
             <p className="text-lg text-center text-gray-500">
               Vez do próximo jogador

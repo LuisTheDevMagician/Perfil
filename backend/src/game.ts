@@ -474,11 +474,10 @@ export class GerenciadorJogo {
     
     this.jogoEncerrado = false;
     this.jogoIniciado = false;
-    this.jogadoresMap.clear();
     this.sessaoAtual = null;
     this.revelouEstaTurno = false;
-    queries.limparSessao();
-    console.log('👋 Saiu da tela de vitória - lobby resetado');
+    queries.limparSessao(true);
+    console.log('👋 Saiu da tela de vitória - lobby resetado (jogadores mantidos no banco)');
   }
 
   getJogoEncerrado(): boolean {
@@ -569,7 +568,6 @@ export class GerenciadorJogo {
     this.atualizarSessao();
 
     this.sessaoAtual = null;
-    this.jogadoresMap.clear();
     console.log('🔄 Jogo reiniciado');
     return true;
   }

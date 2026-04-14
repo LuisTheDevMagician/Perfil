@@ -165,9 +165,11 @@ export const queries = {
     return stmt.all() as any[];
   },
 
-  limparSessao: () => {
+  limparSessao: (manterJogadores: boolean = false) => {
     sqlite.prepare('DELETE FROM respostas_pendentes').run();
-    sqlite.prepare('DELETE FROM jogadores_sessao').run();
+    if (!manterJogadores) {
+      sqlite.prepare('DELETE FROM jogadores_sessao').run();
+    }
     sqlite.prepare('UPDATE sessoes_jogo SET esta_ativa = 0').run();
     console.log('🧹 Sessão limpiada do banco de dados');
   },
