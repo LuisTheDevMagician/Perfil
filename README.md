@@ -110,21 +110,34 @@ Boa sorte e que desbanquem logo essa Entidade! 🏆🎮
 
 ### Tela Inicial PC e Smartphone
 
-<img width="1914" height="886" alt="image" src="https://github.com/user-attachments/assets/6508274a-7675-46d6-a520-157350aad171" />
+<img width="1920" height="889" alt="image" src="https://github.com/user-attachments/assets/2adb9b75-f1d4-43c6-ac64-a8ca6bd7a1a9" />
 
-<img width="405" height="807" alt="image" src="https://github.com/user-attachments/assets/68608a21-9076-42d7-9656-e50bfbe184c7" />
+<img width="402" height="804" alt="image" src="https://github.com/user-attachments/assets/e8ae13b4-fb93-4269-af6a-249511e7dc28" />
+
 
 ### Tela do Lobby PC e Smartphone - Visão Host
 
-<img width="403" height="803" alt="image" src="https://github.com/user-attachments/assets/f3859d7a-3c15-4ab6-a758-000aa63389d4" />
+<img width="1915" height="891" alt="image" src="https://github.com/user-attachments/assets/74c4ed73-d3b7-4d37-bce8-1b6299931cf7" />
 
-<img width="1914" height="886" alt="image" src="https://github.com/user-attachments/assets/f38bcb71-3cf4-416e-95c1-3abaf39e6848" />
+
+<img width="402" height="804" alt="image" src="https://github.com/user-attachments/assets/bf4a9a00-a84b-485d-89c0-fa7b971b5273" />
+
 
 ### Tela do Lobby PC e Smartphone - Visão Jogador
 
-<img width="403" height="803" alt="image" src="https://github.com/user-attachments/assets/31dd5200-0a58-4c4d-bead-66f5d803444c" />
+<img width="1915" height="891" alt="image" src="https://github.com/user-attachments/assets/cf306523-63a4-4f60-bd57-72b38147a0c0" />
 
-<img width="1915" height="891" alt="image" src="https://github.com/user-attachments/assets/9f0c7df4-08ed-4490-b6f3-2472468af4ca" />
+<img width="402" height="811" alt="image" src="https://github.com/user-attachments/assets/73bd58a5-8840-4a74-b8ce-765a4857f21a" />
+
+### Tela do jogo PC e Smartphone - Visão Host
+
+<img width="405" height="808" alt="image" src="https://github.com/user-attachments/assets/3581d56b-d6a6-4b5e-b4c8-e293a0df845c" /> <img width="405" height="808" alt="image" src="https://github.com/user-attachments/assets/850777a8-b409-4d7c-bbf5-c5c403bb6623" />
+
+
+
+
+
+
 
 
 
