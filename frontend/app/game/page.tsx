@@ -49,7 +49,6 @@ export default function GamePage() {
   const [myId, setMyId] = useState<string>('');
   const [playerAnswer, setPlayerAnswer] = useState('');
   const [answers, setAnswers] = useState<Answer[]>([]);
-  const [casesToMove, setCasesToMove] = useState(1);
   const [showCorrectAnswer, setShowCorrectAnswer] = useState(false);
   const [showErrorAnswer, setShowErrorAnswer] = useState(false);
   const [errorPlayerName, setErrorPlayerName] = useState('');
@@ -217,28 +216,38 @@ export default function GamePage() {
   }, [router]);
 
   const handleRevealClue = () => {
-    console.log('👆 handleRevealClue chamado, myId:', myId, 'currentPlayerIndex:', currentPlayerIndex, 'players:', players.map(p => ({ id: p.id, name: p.name })));
+    const myIndex = players.findIndex(p => p.id === myId);
+    console.log('👆 handleRevealClue - myId:', myId, 'myIndex:', myIndex, 'currentPlayerIndex:', currentPlayerIndex);
     socketRef.current?.emit('pass-turn');
     isRevealingRef.current = false;
   };
 
   const handleRevealSpecificClue = (clueIndex: number) => {
+    const myIndex = players.findIndex(p => p.id === myId);
+    console.log('🎯 handleRevealSpecificClue - myId:', myId, 'myIndex:', myIndex, 'currentPlayerIndex:', currentPlayerIndex, 'isRevealing:', isRevealingRef.current);
+    
     // Bloquear IMEDIATAMENTE se já está revelando (síncrono)
     if (isRevealingRef.current) {
       console.log('🚫 Revelação bloqueada: aguarde a sincronização');
       return;
     }
     
-    // Apenas o jogador da vez pode revelar
-    if (currentPlayerIndex !== players.findIndex(p => p.id === myId)) return;
+    // Apenas o jogador da vez pode revelar (comparar índices diretamente)
+    if (currentPlayerIndex !== myIndex) {
+      console.log('🚫 Não é sua vez! currentPlayerIndex:', currentPlayerIndex, 'myIndex:', myIndex);
+      return;
+    }
     // Apenas se a dica ainda não foi revelada
-    if (revealedClueIndices.includes(clueIndex)) return;
+    if (revealedClueIndices.includes(clueIndex)) {
+      console.log('🚫 Dica já revelada:', clueIndex);
+      return;
+    }
     
     // Marcar imediatamente como revelando (síncrono para bloquear cliques rápidos)
     isRevealingRef.current = true;
     console.log('✅ Revelando dica', clueIndex);
     
-    socketRef.current?.emit('reveal-clue', clueIndex); // Enviar índice da dica clicada
+    socketRef.current?.emit('reveal-clue', clueIndex);
   };
 
   const handleSubmitAnswer = () => {
@@ -257,10 +266,7 @@ export default function GamePage() {
   };
 
   const handleValidateAnswer = (answerId: number, isCorrect: boolean) => {
-    socketRef.current?.emit('validate-answer', { answerId, isCorrect, casesToMove: isCorrect ? casesToMove : 1 });
-    if (isCorrect) {
-      setCasesToMove(1);
-    }
+    socketRef.current?.emit('validate-answer', { answerId, isCorrect });
   };
   
   const handleRevealAnswer = () => {
@@ -418,17 +424,15 @@ export default function GamePage() {
                 </div>
               </div>
 
-              {/* Controle de Pontos */}
+              {/* Pontos Automáticos */}
               <div className="bg-white rounded-xl shadow-lg p-4">
-                <h3 className="text-lg font-bold mb-3 text-gray-800">Casas para o acerto</h3>
-                <input
-                  type="number"
-                  min="1"
-                  max="10"
-                  value={casesToMove}
-                  onChange={(e) => setCasesToMove(parseInt(e.target.value) || 1)}
-                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none text-gray-800"
-                />
+                <h3 className="text-lg font-bold mb-3 text-gray-800">Pontos por Acerto</h3>
+                <p className="text-2xl font-bold text-purple-600 text-center">
+                  {Math.max(10 - revealedClueIndices.length + 1, 1)} pontos
+                </p>
+                <p className="text-sm text-gray-500 text-center mt-2">
+                  Diminui a cada dica revelada
+                </p>
               </div>
             </div>
           </div>

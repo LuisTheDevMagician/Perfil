@@ -190,7 +190,9 @@ export function initSocket(httpServer: any) {
           return;
         }
 
+        console.log('📨 reveal-clue recebido de', socket.id, 'indice:', indiceValido);
         const sucesso = gerenciadorJogo.revelarDica(socket.id, indiceValido);
+        console.log('📨 resultado revelarDica:', sucesso);
         if (sucesso) {
           io.emit('clue-revealed', {
             revealedClueIndices: gerenciadorJogo.getDicasReveladas(),
@@ -259,9 +261,9 @@ export function initSocket(httpServer: any) {
           return;
         }
         
-        const { answerId, isCorrect, casesToMove } = data as any;
+        const { answerId, isCorrect } = data as any;
         
-        console.log('📋 Parsed data:', { answerId, isCorrect, casesToMove });
+        console.log('📋 Parsed data:', { answerId, isCorrect });
         
         if (typeof answerId !== 'number' || answerId < 1) {
           socket.emit('error', { message: 'ID de resposta inválido' });
@@ -273,11 +275,8 @@ export function initSocket(httpServer: any) {
           return;
         }
         
-        const casasValidas = validarCasas(casesToMove);
-        if (casasValidas === null) {
-          socket.emit('error', { message: 'Casas deve ser entre 1 e 10' });
-          return;
-        }
+        const casasValidas = gerenciadorJogo.calcularPontos();
+        console.log('🎯 Pontos automáticos:', casasValidas);
 
         const resultado = gerenciadorJogo.validarResposta(answerId, isCorrect, casasValidas);
         console.log('📊 Resultado da validação:', resultado);
@@ -287,7 +286,7 @@ export function initSocket(httpServer: any) {
             io.emit('answer-correct', {
               playerName: resultado.nomeJogador,
               correctAnswer: resultado.respostaCorreta,
-              casesToMove: casasValidas,
+              pointsAwarded: casasValidas,
               currentPlayerId: getIdJogadorTurno(),
               players: gerenciadorJogo.getJogadores(getSocketIdsAtivos()).map(mapJogadorParaFrontend),
             });

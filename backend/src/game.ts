@@ -472,12 +472,20 @@ export class GerenciadorJogo {
   sairDaTelaDeVitoria(): void {
     if (!this.jogoEncerrado) return;
     
+    const jogadores = this.getJogadores();
+    for (const j of jogadores) {
+      j.pontuacao = 0;
+      j.rolagem_dado = j.e_host ? 0 : null;
+      j.e_turno_atual = false;
+      queries.atualizarJogador(j.id, { pontuacao: 0, rolagemDado: j.e_host ? 0 : null, eTurnoAtual: 0 });
+    }
+    
     this.jogoEncerrado = false;
     this.jogoIniciado = false;
     this.sessaoAtual = null;
     this.revelouEstaTurno = false;
     queries.limparSessao(true);
-    console.log('👋 Saiu da tela de vitória - lobby resetado (jogadores mantidos no banco)');
+    console.log('👋 Saiu da tela de vitória - pontos resetados');
   }
 
   getJogoEncerrado(): boolean {
@@ -518,6 +526,12 @@ export class GerenciadorJogo {
     } catch {
       return [];
     }
+  }
+
+  calcularPontos(): number {
+    const dicasReveladas = this.getDicasReveladas();
+    const total = dicasReveladas.length;
+    return Math.max(10 - total + 1, 1);
   }
 
   getJogoIniciado(): boolean {

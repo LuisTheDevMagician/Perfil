@@ -14,29 +14,28 @@ interface Player {
   score: number;
 }
 
+function getInitialData() {
+  if (typeof window === 'undefined') {
+    return { ranking: [], isHost: false };
+  }
+  
+  const rankingData = localStorage.getItem('perfil_ranking');
+  localStorage.removeItem('perfil_ranking');
+  const ranking: Player[] = rankingData ? JSON.parse(rankingData) : [];
+  
+  const hostData = localStorage.getItem('perfil_isHost');
+  localStorage.removeItem('perfil_isHost');
+  const isHost = hostData === 'true';
+  
+  return { ranking, isHost };
+}
+
 function VictoryContent() {
   const router = useRouter();
   
-  const [ranking, setRanking] = useState<Player[]>([]);
-  const [isHost, setIsHost] = useState(false);
-
-  useEffect(() => {
-    const rankingData = localStorage.getItem('perfil_ranking');
-    if (rankingData) {
-      try {
-        setRanking(JSON.parse(rankingData));
-        localStorage.removeItem('perfil_ranking');
-      } catch (e) {
-        console.error('Erro ao carregar ranking:', e);
-      }
-    }
-    
-    const hostData = localStorage.getItem('perfil_isHost');
-    if (hostData) {
-      setIsHost(hostData === 'true');
-      localStorage.removeItem('perfil_isHost');
-    }
-  }, []);
+  const initialData = getInitialData();
+  const [ranking] = useState<Player[]>(initialData.ranking);
+  const [isHost] = useState(initialData.isHost);
 
   useEffect(() => {
     const socket = getSocket();
