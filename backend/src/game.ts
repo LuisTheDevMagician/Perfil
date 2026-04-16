@@ -399,18 +399,6 @@ export class GerenciadorJogo {
       return;
     }
 
-    const jogadores = this.getJogadores().filter(j => !j.e_host);
-    for (const j of jogadores) {
-      j.e_turno_atual = false;
-      queries.atualizarJogador(j.id, { eTurnoAtual: 0 });
-    }
-    
-    if (jogadores.length > 0) {
-      jogadores[0].e_turno_atual = true;
-      this.sessaoAtual.id_jogador_atual = jogadores[0].id;
-      queries.atualizarJogador(jogadores[0].id, { eTurnoAtual: 1 });
-    }
-
     queries.limparRespostasSessao(this.sessaoAtual.id);
     this.atualizarSessao();
     console.log(`🃏 Próxima carta: ${this.getCartaAtual()?.nome}`);
