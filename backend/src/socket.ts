@@ -393,9 +393,21 @@ export function initSocket(httpServer: any) {
       }
     });
 
+    socket.on('sair-lobby', () => {
+      try {
+        gerenciadorJogo.removerJogador(socket.id, true);
+        io.emit('player-left', { 
+          playerId: socket.id, 
+          players: gerenciadorJogo.getJogadores(getSocketIdsAtivos()).map(mapJogadorParaFrontend) 
+        });
+      } catch (error: any) {
+        console.error('Erro em sair-lobby:', error.message);
+      }
+    });
+
     socket.on('disconnect', () => {
       try {
-        gerenciadorJogo.removerJogador(socket.id);
+        gerenciadorJogo.removerJogador(socket.id, false);
         io.emit('player-left', { 
           playerId: socket.id, 
           players: gerenciadorJogo.getJogadores(getSocketIdsAtivos()).map(mapJogadorParaFrontend) 

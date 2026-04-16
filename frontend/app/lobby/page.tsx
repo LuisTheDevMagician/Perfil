@@ -46,9 +46,7 @@ function LobbyContent() {
     const fromVictory = localStorage.getItem('perfil_from_victory');
     if (fromVictory) {
       localStorage.removeItem('perfil_from_victory');
-      setTimeout(() => {
-        window.location.reload();
-      }, 100);
+      // No longer reload, we just rejoin normally.
     }
   }, []);
 
@@ -65,12 +63,21 @@ function LobbyContent() {
     const socket = getSocket();
     socketRef.current = socket;
 
+    const sessionId = getSessionId();
+
+    if (socket.connected) {
+      console.log('Socket já conectado no lobby!', socket.id);
+      setTimeout(() => {
+        setIsConnecting(false);
+        setConnectionStatus('Conectado!');
+      }, 0);
+      socket.emit('join-lobby', { nome: nameToUse, sessionId });
+    }
+
     socket.on('connect', () => {
       console.log('Socket conectado no lobby!', socket.id);
       setIsConnecting(false);
       setConnectionStatus('Conectado!');
-      
-      const sessionId = getSessionId();
       socket.emit('join-lobby', { nome: nameToUse, sessionId });
     });
 

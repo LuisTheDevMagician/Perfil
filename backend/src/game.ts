@@ -470,19 +470,29 @@ export class GerenciadorJogo {
   sairDaTelaDeVitoria(): void {
     if (!this.jogoEncerrado) return;
     
-    const jogadores = this.getJogadores();
-    for (const j of jogadores) {
-      j.pontuacao = 0;
-      j.rolagem_dado = j.e_host ? 0 : null;
-      j.e_turno_atual = false;
-      queries.atualizarJogador(j.id, { pontuacao: 0, rolagemDado: j.e_host ? 0 : null, eTurnoAtual: 0 });
+    if (this.sessaoAtual) {
+      const jogadores = this.getJogadores();
+      for (const j of jogadores) {
+        j.pontuacao = 0;
+        j.rolagem_dado = j.e_host ? 0 : null;
+        j.e_turno_atual = false;
+        queries.atualizarJogador(j.id, { pontuacao: 0, rolagemDado: j.e_host ? 0 : null, eTurnoAtual: 0 });
+      }
+      
+      this.jogoEncerrado = false;
+      this.jogoIniciado = false;
+      this.sessaoAtual.id_carta_atual = 0;
+      this.sessaoAtual.dicas_reveladas = '[]';
+      this.sessaoAtual.esta_ativa = true;
+      this.sessaoAtual.id_jogador_atual = 0;
+      this.atualizarSessao();
+    } else {
+      this.jogoEncerrado = false;
+      this.jogoIniciado = false;
+      this.revelouEstaTurno = false;
     }
     
-    this.jogoEncerrado = false;
-    this.jogoIniciado = false;
-    this.sessaoAtual = null;
-    this.revelouEstaTurno = false;
-    queries.limparSessao(true);
+    // queries.limparSessao(true); // Removido para manter a sessão ativa
     console.log('👋 Saiu da tela de vitória - pontos resetados');
   }
 
@@ -547,18 +557,23 @@ export class GerenciadorJogo {
     return this.revelouEstaTurno;
   }
 
-  removerJogador(idSocket: string) {
+  removerJogador(idSocket: string, permanente: boolean = false) {
     const jogador = this.jogadoresMap.get(idSocket);
     if (jogador) {
-      console.log(`❌ ${jogador.nome_jogador} desconectou (memória)`);
+      console.log(`❌ ${jogador.nome_jogador} desconectou (memória), permanente: ${permanente}`);
       this.jogadoresMap.delete(idSocket);
       this.jogadoresMap.delete(`id:${jogador.id}`);
-      queries.removerJogador(idSocket);
 
-      if (jogador.e_host && this.jogadoresMap.size > 0) {
-        const novoHost = this.getJogadores()[0];
-        novoHost.e_host = true;
-        queries.atualizarJogador(novoHost.id, { eHost: 1 });
+      if (permanente) {
+        queries.removerJogador(idSocket);
+
+        if (jogador.e_host && this.jogadoresMap.size > 0) {
+          const novoHost = this.getJogadores()[0];
+          novoHost.e_host = true;
+          queries.atualizarJogador(novoHost.id, { eHost: 1 });
+        }
+      } else {
+        queries.atualizarSocketJogador(jogador.id, '');
       }
     }
   }
