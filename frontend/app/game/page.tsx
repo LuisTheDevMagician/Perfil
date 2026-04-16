@@ -18,6 +18,7 @@ import TimerIcon from '@mui/icons-material/Timer';
 import SportsScoreIcon from '@mui/icons-material/SportsScore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import ArrowRightAltIcon from '@mui/icons-material/ArrowRightAlt';
+import WarningIcon from '@mui/icons-material/Warning';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import WhatshotIcon from '@mui/icons-material/Whatshot';
 import GroupIcon from '@mui/icons-material/Group';
@@ -52,6 +53,7 @@ export default function GamePage() {
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [showCorrectAnswer, setShowCorrectAnswer] = useState(false);
   const [showErrorAnswer, setShowErrorAnswer] = useState(false);
+  const [showNobodyGuessed, setShowNobodyGuessed] = useState(false);
   const [errorPlayerName, setErrorPlayerName] = useState('');
   const [errorAnswer, setErrorAnswer] = useState('');
   const [correctAnswerText, setCorrectAnswerText] = useState('');
@@ -87,6 +89,7 @@ export default function GamePage() {
       const deduplicated = gamePlayers.filter((p, i, arr) => arr.findIndex(x => x.name === p.name) === i);
       setPlayers(deduplicated);
       setShowCorrectAnswer(false);
+      setShowNobodyGuessed(false);
       setIsLoading(false);
       const currentId = socket.id;
       const me = deduplicated.find((p: Player) => p.id === currentId);
@@ -153,6 +156,7 @@ export default function GamePage() {
       setRevealedClueIndices([]);
       setShowCorrectAnswer(false);
       setShowErrorAnswer(false);
+      setShowNobodyGuessed(false);
       setAnswers([]);
       setHasAnswered(false);
       isRevealingRef.current = false;
@@ -171,10 +175,9 @@ export default function GamePage() {
     
     const handleAnswerRevealed = ({ correctAnswer }: { correctAnswer: string }) => {
       setCorrectAnswerText(correctAnswer);
-      setWinnerName('Ninguém acertou');
-      setShowCorrectAnswer(true);
+      setShowNobodyGuessed(true);
       setTimeout(() => {
-        setShowCorrectAnswer(false);
+        setShowNobodyGuessed(false);
       }, 3000);
     };
     
@@ -429,7 +432,7 @@ export default function GamePage() {
               <div className="bg-white rounded-xl shadow-lg p-4">
                 <h3 className="text-lg font-bold mb-3 text-gray-800">Pontos por Acerto</h3>
                 <p className="text-2xl font-bold text-purple-600 text-center">
-                  {Math.max(10 - revealedClueIndices.length + 1, 1)} pontos
+                  {revealedClueIndices.length <= 1 ? 10 : Math.max(11 - revealedClueIndices.length, 1)} pontos
                 </p>
                 <p className="text-sm text-gray-500 text-center mt-2">
                   Diminui a cada dica revelada
@@ -475,6 +478,26 @@ export default function GamePage() {
             </div>
           </div>
         )}
+        {/* Notificação de Ninguém Acertou */}
+        {showNobodyGuessed && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-yellow-100 rounded-2xl shadow-2xl p-8 max-w-md mx-4 animate-bounce border-4 border-yellow-400">
+              <div className="flex justify-center mb-4">
+                <WarningIcon className="text-yellow-600" style={{ fontSize: 64 }} />
+              </div>
+              <h2 className="text-3xl font-bold text-center text-yellow-600 mb-4">
+                NINGUÉM ACERTOU!
+              </h2>
+              <p className="text-xl text-center text-gray-700 mb-2">
+                A resposta era:
+              </p>
+              <p className="text-2xl font-bold text-center text-yellow-700">
+                &quot;{correctAnswerText}&quot;
+              </p>
+            </div>
+          </div>
+        )}
+
       </div>
     );
   }
@@ -518,6 +541,13 @@ export default function GamePage() {
                   </div>
                 </div>
               ))}
+            </div>
+
+            <div className="bg-white rounded-xl shadow-lg p-4">
+              <h3 className="text-lg font-bold mb-3 text-gray-800 text-center">Pontos em Jogo</h3>
+              <p className="text-2xl font-bold text-purple-600 text-center">
+                {revealedClueIndices.length <= 1 ? 10 : Math.max(11 - revealedClueIndices.length, 1)} pontos
+              </p>
             </div>
 
             {/* Placar - Apenas Jogadores */}
@@ -677,6 +707,26 @@ export default function GamePage() {
           </div>
         </div>
       )}
+      {/* Notificação de Ninguém Acertou */}
+      {showNobodyGuessed && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-yellow-100 rounded-2xl shadow-2xl p-8 max-w-md mx-4 animate-bounce border-4 border-yellow-400">
+            <div className="flex justify-center mb-4">
+              <WarningIcon className="text-yellow-600" style={{ fontSize: 64 }} />
+            </div>
+            <h2 className="text-3xl font-bold text-center text-yellow-600 mb-4">
+              NINGUÉM ACERTOU!
+            </h2>
+            <p className="text-xl text-center text-gray-700 mb-2">
+              A resposta era:
+            </p>
+            <p className="text-2xl font-bold text-center text-yellow-700">
+              &quot;{correctAnswerText}&quot;
+            </p>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

@@ -519,7 +519,7 @@ export class GerenciadorJogo {
   calcularPontos(): number {
     const dicasReveladas = this.getDicasReveladas();
     const total = dicasReveladas.length;
-    return Math.max(10 - total + 1, 1);
+    return total <= 1 ? 10 : Math.max(11 - total, 1);
   }
 
   getJogoIniciado(): boolean {
