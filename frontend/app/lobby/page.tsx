@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Socket } from 'socket.io-client';
 import { getSocket, getSessionId } from '@/lib/socket';
 import CasinoIcon from '@mui/icons-material/Casino';
-import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import GroupIcon from '@mui/icons-material/Group';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import SortIcon from '@mui/icons-material/Sort';
@@ -42,7 +41,6 @@ function LobbyContent() {
   const [temaNome, setTemaNome] = useState('');
   
   const playerNameParam = searchParams.get('nome') || '';
-  const [playerName, setPlayerName] = useState(playerNameParam);
 
   useEffect(() => {
     const fromVictory = localStorage.getItem('perfil_from_victory');
@@ -55,28 +53,14 @@ function LobbyContent() {
   }, []);
 
   useEffect(() => {
-    const storedName = localStorage.getItem('perfil_player_name');
-    if (!playerNameParam && storedName) {
-      setPlayerName(storedName);
-    } else if (playerNameParam) {
-      setPlayerName(playerNameParam);
-    }
-  }, [playerNameParam]);
-
-  useEffect(() => {
-    const storedName = localStorage.getItem('perfil_player_name') || playerName;
+    const nameToUse = playerNameParam || localStorage.getItem('perfil_player_name') || '';
     
-    if (!storedName) {
+    if (!nameToUse) {
       router.push('/');
       return;
     }
     
-    if (storedName !== playerName) {
-      setPlayerName(storedName);
-      return;
-    }
-    
-    localStorage.setItem('perfil_player_name', playerName);
+    localStorage.setItem('perfil_player_name', nameToUse);
     
     const socket = getSocket();
     socketRef.current = socket;
@@ -87,7 +71,7 @@ function LobbyContent() {
       setConnectionStatus('Conectado!');
       
       const sessionId = getSessionId();
-      socket.emit('join-lobby', { nome: playerName, sessionId });
+      socket.emit('join-lobby', { nome: nameToUse, sessionId });
     });
 
     socket.on('connect_error', (error) => {
@@ -173,7 +157,7 @@ function LobbyContent() {
       socket.off('return-to-lobby');
       socket.off('lobby-state');
     };
-  }, [router, playerName]);
+  }, [router, playerNameParam]);
 
   useEffect(() => {
     if (currentPlayer?.isHost) {
@@ -242,6 +226,12 @@ function LobbyContent() {
             {currentPlayer?.isHost && <span className="text-purple-600 font-bold"><StarIcon className="mr-1" /> Você é o HOST!</span>}
             {!currentPlayer?.isHost && <span>Aguarde o HOST iniciar a partida</span>}
           </p>
+
+          {error && (
+            <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-r">
+              <p>{error}</p>
+            </div>
+          )}
 
           <div className="bg-gray-50 rounded-xl p-4 mb-6">
             <h2 className="text-xl font-bold mb-4 text-gray-800 flex items-center gap-2">
