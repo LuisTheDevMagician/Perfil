@@ -131,7 +131,54 @@ Boa sorte e que desbanquem logo essa Entidade! 🏆🎮
 
 ### Tela do jogo PC e Smartphone - Visão Host
 
+<img width="1920" height="894" alt="image" src="https://github.com/user-attachments/assets/08ccfe98-88fc-499e-b310-5d4082afd0f6" />
+
 <img width="405" height="808" alt="image" src="https://github.com/user-attachments/assets/3581d56b-d6a6-4b5e-b4c8-e293a0df845c" /> <img width="405" height="808" alt="image" src="https://github.com/user-attachments/assets/850777a8-b409-4d7c-bbf5-c5c403bb6623" />
+
+### Tela do jogo PC e Smartphone - Visão Jogador
+
+
+<img width="1915" height="895" alt="image" src="https://github.com/user-attachments/assets/b3012795-8837-4012-9515-593bcb26f654" />
+
+<img width="405" height="808" alt="image" src="https://github.com/user-attachments/assets/14084010-ae3d-483e-b00a-e3a6a76afe90" /> <img width="405" height="808" alt="image" src="https://github.com/user-attachments/assets/1ba7cf59-fb63-4ee1-b8e6-4231051b4011" />
+
+### Tela de Resposta Correta
+
+<img width="1913" height="887" alt="image" src="https://github.com/user-attachments/assets/2d6ae6f2-7498-4b24-84d6-a9be4ad58141" />
+
+### Tela de Resposta Errada
+
+<img width="1913" height="887" alt="image" src="https://github.com/user-attachments/assets/8c93dcc6-9bde-47eb-aee4-c4fb005d41c3" />
+
+### Tela de Quando nenhum jogador acerta e host revla a Resposta
+
+<img width="1913" height="887" alt="image" src="https://github.com/user-attachments/assets/e3833700-71c8-4e02-8465-7a4914ddec1e" />
+
+<img width="1913" height="887" alt="image" src="https://github.com/user-attachments/assets/57f50d44-2d85-4eb1-8b8b-f86c767d7e7c" />
+
+### Tela de Vitória - Visão Host
+
+<img width="1913" height="887" alt="image" src="https://github.com/user-attachments/assets/81f1f260-7854-401f-a601-490b11794b7e" />
+
+<img width="403" height="801" alt="image" src="https://github.com/user-attachments/assets/0170f4b5-4320-42f0-994d-565de8d69f4d" />
+
+### Tela de Vitória - Visão Jogador
+
+<img width="1911" height="894" alt="image" src="https://github.com/user-attachments/assets/3daf4a9c-c98d-4a82-b106-0ed294a44ce1" />
+
+<img width="403" height="801" alt="image" src="https://github.com/user-attachments/assets/5f9c91d9-d40e-41b4-9c5b-f4a7d9f0b393" />
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
