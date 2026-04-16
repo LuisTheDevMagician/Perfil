@@ -163,10 +163,13 @@ function LobbyContent() {
     if (currentPlayer?.isHost) {
       Promise.all([
         fetch('http://localhost:3001/api/disciplinas').then(r => r.json()),
-        fetch('http://localhost:3001/api/temas').then(r => r.json())
-      ]).then(([disc, temasData]) => {
+        fetch('http://localhost:3001/api/temas').then(r => r.json()),
+        fetch('http://localhost:3001/api/cartas').then(r => r.json())
+      ]).then(([disc, temasData, cartasData]) => {
         setDisciplinas(disc);
-        setTemas(temasData);
+        // Filtra apenas os temas que têm pelo menos uma carta associada
+        const temasComCartasIds = new Set(cartasData.map((c: { tema_id: number }) => c.tema_id));
+        setTemas(temasData.filter((t: { id: number; nome: string; disciplina_id: number }) => temasComCartasIds.has(t.id)));
       });
     }
   }, [currentPlayer?.isHost]);
