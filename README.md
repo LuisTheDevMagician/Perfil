@@ -103,3 +103,35 @@ Você pode conferir detalhes simplificados das normativas no arquivo formal `LIC
 
 *(Desenvolvido em Next.js | Dezembro 2025/Abril 2026 - Versão V2 MonoSeparada).*
 Boa sorte e que desbanquem logo essa Entidade! 🏆🎮
+
+---
+
+## Telas do jogo
+
+### Tela Inicial PC e Smartphone
+
+<img width="1914" height="886" alt="image" src="https://github.com/user-attachments/assets/6508274a-7675-46d6-a520-157350aad171" />
+
+<img width="405" height="807" alt="image" src="https://github.com/user-attachments/assets/68608a21-9076-42d7-9656-e50bfbe184c7" />
+
+### Tela do Lobby PC e Smartphone - Visão Host
+
+<img width="403" height="803" alt="image" src="https://github.com/user-attachments/assets/f3859d7a-3c15-4ab6-a758-000aa63389d4" />
+
+<img width="1914" height="886" alt="image" src="https://github.com/user-attachments/assets/f38bcb71-3cf4-416e-95c1-3abaf39e6848" />
+
+### Tela do Lobby PC e Smartphone - Visão Jogador
+
+<img width="403" height="803" alt="image" src="https://github.com/user-attachments/assets/31dd5200-0a58-4c4d-bead-66f5d803444c" />
+
+<img width="1915" height="891" alt="image" src="https://github.com/user-attachments/assets/9f0c7df4-08ed-4490-b6f3-2472468af4ca" />
+
+
+
+
+
+
+
+
+
+
