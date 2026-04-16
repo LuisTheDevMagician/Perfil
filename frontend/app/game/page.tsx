@@ -17,6 +17,7 @@ import SendIcon from '@mui/icons-material/Send';
 import TimerIcon from '@mui/icons-material/Timer';
 import SportsScoreIcon from '@mui/icons-material/SportsScore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import ArrowRightAltIcon from '@mui/icons-material/ArrowRightAlt';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import WhatshotIcon from '@mui/icons-material/Whatshot';
 import GroupIcon from '@mui/icons-material/Group';
@@ -391,8 +392,8 @@ export default function GamePage() {
 
               {/* Respostas Recebidas */}
               <div className="bg-white rounded-xl shadow-lg p-4">
-                <h3 className="text-lg font-bold mb-3 text-gray-800">
-                  Respostas ({answers.length})
+                <h3 className="text-lg font-bold mb-3 text-gray-800 flex items-center justify-center">
+                  Respostas <ArrowRightAltIcon className="mx-1 text-gray-500" /> {answers.length}
                 </h3>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {answers.length === 0 ? (
