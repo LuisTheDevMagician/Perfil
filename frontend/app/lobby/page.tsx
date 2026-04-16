@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Socket } from 'socket.io-client';
-import { getSocket, getSessionId } from '@/lib/socket';
+import { getSocket, getSessionId, disconnectSocket, clearSession } from '@/lib/socket';
 import CasinoIcon from '@mui/icons-material/Casino';
 import GroupIcon from '@mui/icons-material/Group';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -192,7 +192,14 @@ function LobbyContent() {
     socketRef.current?.emit('start-game');
   };
 
-  const handleVoltar = () => {
+  const handleSair = () => {
+    if (socketRef.current) {
+      socketRef.current.emit('sair-lobby');
+      socketRef.current.disconnect();
+    }
+    disconnectSocket();
+    localStorage.removeItem('perfil_player_name');
+    clearSession();
     router.push('/');
   };
 
@@ -205,10 +212,10 @@ function LobbyContent() {
         <div className="bg-white rounded-2xl shadow-2xl p-6 md:p-8">
           <div className="flex items-center justify-between mb-4">
             <button
-              onClick={handleVoltar}
-              className="flex items-center gap-1 text-gray-600 hover:text-purple-600 transition-colors"
+              onClick={handleSair}
+              className="flex items-center justify-center gap-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors shadow-md border border-red-700"
             >
-              <ArrowBackIcon /> Voltar
+              <ArrowBackIcon /> Sair
             </button>
             <div className={`px-3 py-1 rounded-lg text-sm ${
               isConnecting 

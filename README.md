@@ -7,7 +7,7 @@ Jogo web multiplayer local estilo "Perfil" (jogo de adivinhação com dicas prog
 ## 📋 Sobre o Jogo
 
 O **Jogo Perfil** é um quiz de adivinhação divertido e educacional onde:
-- Uma **ENTIDADE** (resposta correta) precisa ser descoberta através de **10 DICAS** progressivas.
+- Uma **ENTIDADE: Carta** A resposta correta precisa ser descoberta através de **10 DICAS** progressivas.
 - Há um **HOST** (mestre do jogo) que vê todas as informações da carta (dicas, resposta, controle do jogo).
 - Os demais **JOGADORES** veem apenas as dicas sendo reveladas e a pontuação em jogo em tempo real.
 

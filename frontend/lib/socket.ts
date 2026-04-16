@@ -55,7 +55,7 @@ export const getSocket = (): Socket => {
   return socket;
 };
 
-export const disconnectSocket = () => {
+export const disconnectSocket = (): void => {
   if (socket) {
     socket.disconnect();
     socket = null;
@@ -64,4 +64,10 @@ export const disconnectSocket = () => {
 
 export const getSessionId = (): string => {
   return getOrCreateSessionId();
+};
+
+export const clearSession = (): void => {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('perfil_session_id');
+  }
 };

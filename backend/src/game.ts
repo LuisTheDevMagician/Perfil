@@ -133,6 +133,16 @@ export class GerenciadorJogo {
     if (socketIdsAtivos) {
       jogadores = jogadores.filter(j => socketIdsAtivos.includes(j.id_socket));
     }
+    
+    // Garantir ordem consistente (host primeiro, depois decrescente por rolagem)
+    jogadores.sort((a, b) => {
+      if (a.e_host) return -1;
+      if (b.e_host) return 1;
+      if (a.rolagem_dado === null) return 1;
+      if (b.rolagem_dado === null) return -1;
+      return b.rolagem_dado - a.rolagem_dado;
+    });
+
     return jogadores;
   }
 
@@ -542,11 +552,13 @@ export class GerenciadorJogo {
     if (jogador) {
       console.log(`❌ ${jogador.nome_jogador} desconectou (memória)`);
       this.jogadoresMap.delete(idSocket);
+      this.jogadoresMap.delete(`id:${jogador.id}`);
+      queries.removerJogador(idSocket);
 
       if (jogador.e_host && this.jogadoresMap.size > 0) {
         const novoHost = this.getJogadores()[0];
         novoHost.e_host = true;
-        queries.atualizarJogador(novoHost.id, { eTurnoAtual: novoHost.e_turno_atual ? 1 : 0 });
+        queries.atualizarJogador(novoHost.id, { eHost: 1 });
       }
     }
   }
@@ -566,11 +578,13 @@ export class GerenciadorJogo {
     this.jogoEncerrado = false;
     this.sessaoAtual.id_carta_atual = 0;
     this.sessaoAtual.dicas_reveladas = '[]';
-    this.sessaoAtual.esta_ativa = false;
+    this.sessaoAtual.esta_ativa = true; // manter a sessão ativa para jogar novamente
+    this.sessaoAtual.id_jogador_atual = 0; // zerar quem é o jogador do turno
     this.atualizarSessao();
 
-    this.sessaoAtual = null;
-    console.log('🔄 Jogo reiniciado');
+    // NÃO remover a sessão atual
+    // this.sessaoAtual = null; 
+    console.log('🔄 Jogo reiniciado na mesma sessão');
     return true;
   }
 
@@ -617,8 +631,11 @@ export class GerenciadorJogo {
     console.log('✅ Jogador encontrado no banco:', jogador.nome_jogador, 'id:', jogador.id);
     jogador.id_socket = idSocket;
     
-    if (this.sessaoAtual && this.sessaoAtual.id_jogador_atual === jogador.id) {
+    // Se o jogo recomeçou ou está no lobby, ninguém é o turno atual.
+    if (this.sessaoAtual && this.sessaoAtual.id_jogador_atual === jogador.id && this.sessaoAtual.id_jogador_atual !== 0) {
       jogador.e_turno_atual = true;
+    } else {
+      jogador.e_turno_atual = false;
     }
     
     this.jogadoresMap.set(idSocket, jogador);

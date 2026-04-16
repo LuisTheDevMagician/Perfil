@@ -98,11 +98,14 @@ export default function GamePage() {
       setMyId(currentId || '');
     };
     
-    const handleClueRevealed = ({ revealedClueIndices: newRevealed, currentPlayerIndex: newIndex, currentPlayerId: newPlayerId }: { revealedClueIndices: number[], currentPlayerIndex: number, currentPlayerId: string }) => {
+    const handleClueRevealed = ({ revealedClueIndices: newRevealed, currentPlayerIndex: newIndex, currentPlayerId: newPlayerId, players: updatedPlayers }: { revealedClueIndices: number[], currentPlayerIndex: number, currentPlayerId: string, players?: Player[] }) => {
       console.log('📨 Evento clue-revealed recebido:', { newRevealed, newIndex, newPlayerId });
       setRevealedClueIndices(newRevealed);
       setCurrentPlayerIndex(newIndex);
       setCurrentPlayerId(newPlayerId);
+      if (updatedPlayers) {
+        setPlayers(updatedPlayers.filter((p, i, arr) => arr.findIndex(x => x.name === p.name) === i));
+      }
       setShowErrorAnswer(false);
       
       isRevealingRef.current = false;
@@ -135,10 +138,13 @@ export default function GamePage() {
       }, 3000);
     };
     
-    const handleAnswerIncorrect = ({ playerName, answer, nextPlayerIndex, nextPlayerId }: { playerName: string, answer: string, nextPlayerIndex: number, nextPlayerId: string }) => {
+    const handleAnswerIncorrect = ({ playerName, answer, nextPlayerIndex, nextPlayerId, players: updatedPlayers }: { playerName: string, answer: string, nextPlayerIndex: number, nextPlayerId: string, players?: Player[] }) => {
       console.log(`❌ ${playerName} errou! Resposta: "${answer}" Próximo jogador: index ${nextPlayerIndex}, id ${nextPlayerId}`);
       setCurrentPlayerIndex(nextPlayerIndex);
       setCurrentPlayerId(nextPlayerId);
+      if (updatedPlayers) {
+        setPlayers(updatedPlayers.filter((p, i, arr) => arr.findIndex(x => x.name === p.name) === i));
+      }
       setErrorPlayerName(playerName);
       setErrorAnswer(answer || '');
       setShowErrorAnswer(true);
@@ -149,10 +155,13 @@ export default function GamePage() {
       }, 3000);
     };
     
-    const handleNextCard = ({ currentCard: card, currentPlayerIndex: index, currentPlayerId: playerId }: { currentCard: Card, currentPlayerIndex: number, currentPlayerId: string }) => {
+    const handleNextCard = ({ currentCard: card, currentPlayerIndex: index, currentPlayerId: playerId, players: updatedPlayers }: { currentCard: Card, currentPlayerIndex: number, currentPlayerId: string, players?: Player[] }) => {
       setCurrentCard(card);
       setCurrentPlayerIndex(index);
       setCurrentPlayerId(playerId);
+      if (updatedPlayers) {
+        setPlayers(updatedPlayers.filter((p, i, arr) => arr.findIndex(x => x.name === p.name) === i));
+      }
       setRevealedClueIndices([]);
       setShowCorrectAnswer(false);
       setShowErrorAnswer(false);
@@ -185,6 +194,20 @@ export default function GamePage() {
       router.push('/lobby');
     };
 
+    const handleNextPlayer = ({ currentPlayerIndex: newIndex, currentPlayerId: newPlayerId, players: updatedPlayers }: { currentPlayerIndex: number, currentPlayerId: string, players?: Player[] }) => {
+      console.log('🔄 Vez passou para:', newPlayerId);
+      setCurrentPlayerIndex(newIndex);
+      setCurrentPlayerId(newPlayerId);
+      if (updatedPlayers) {
+        setPlayers(updatedPlayers.filter((p, i, arr) => arr.findIndex(x => x.name === p.name) === i));
+      }
+    };
+
+    const handlePlayerLeft = ({ playerId, players: updatedPlayers }: { playerId: string, players: Player[] }) => {
+      console.log('🔙 Jogador saiu do jogo:', playerId);
+      setPlayers(updatedPlayers.filter((p, i, arr) => arr.findIndex(x => x.name === p.name) === i));
+    };
+
     socket.on('connect', handleConnect);
     socket.on('game-started', handleGameStarted);
     socket.on('clue-revealed', handleClueRevealed);
@@ -197,6 +220,8 @@ export default function GamePage() {
     socket.on('answers-updated', handleAnswersUpdated);
     socket.on('answer-revealed', handleAnswerRevealed);
     socket.on('game-restarted', handleGameRestarted);
+    socket.on('next-player', handleNextPlayer);
+    socket.on('player-left', handlePlayerLeft);
     
     if (socket.connected) {
       handleConnect();
@@ -215,6 +240,8 @@ export default function GamePage() {
       socket.off('answers-updated');
       socket.off('answer-revealed');
       socket.off('game-restarted');
+      socket.off('next-player', handleNextPlayer);
+      socket.off('player-left', handlePlayerLeft);
       socket.off('connect', handleConnect);
     };
   }, [router]);

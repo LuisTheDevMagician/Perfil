@@ -198,6 +198,7 @@ export function initSocket(httpServer: any) {
             revealedClueIndices: gerenciadorJogo.getDicasReveladas(),
             currentPlayerIndex: getIndiceJogadorTurno(),
             currentPlayerId: getIdJogadorTurno(),
+            players: gerenciadorJogo.getJogadores(getSocketIdsAtivos()).map(mapJogadorParaFrontend)
           });
         }
       } catch (error: any) {
@@ -306,6 +307,7 @@ export function initSocket(httpServer: any) {
                   currentCard: nextCard,
                   currentPlayerIndex: getIndiceJogadorTurno(),
                   currentPlayerId: getIdJogadorTurno(),
+                  players: gerenciadorJogo.getJogadores(getSocketIdsAtivos()).map(mapJogadorParaFrontend),
                 });
               }
             }, 3000);
@@ -315,7 +317,8 @@ export function initSocket(httpServer: any) {
               playerName: resultado.nomeJogador,
               answer: resultado.resposta,
               nextPlayerIndex: getIndiceJogadorTurno(),
-              nextPlayerId: getIdJogadorTurno()
+              nextPlayerId: getIdJogadorTurno(),
+              players: gerenciadorJogo.getJogadores(getSocketIdsAtivos()).map(mapJogadorParaFrontend)
             });
           }
 

@@ -87,9 +87,9 @@ export const queries = {
     return stmt.run(idSocket, id);
   },
 
-  atualizarJogador: (id: number, data: { pontuacao?: number; rolagemDado?: number | null; eTurnoAtual?: number }) => {
-    const sets: string[] = [];
-    const values: any[] = [];
+  atualizarJogador: (id: number, data: { pontuacao?: number, rolagemDado?: number | null, eTurnoAtual?: number, eHost?: number }) => {
+    const sets = [];
+    const values = [];
     
     if (data.pontuacao !== undefined) {
       sets.push('pontuacao = ?');
@@ -102,6 +102,10 @@ export const queries = {
     if (data.eTurnoAtual !== undefined) {
       sets.push('e_turno_atual = ?');
       values.push(data.eTurnoAtual);
+    }
+    if (data.eHost !== undefined) {
+      sets.push('e_host = ?');
+      values.push(data.eHost);
     }
     
     values.push(id);
