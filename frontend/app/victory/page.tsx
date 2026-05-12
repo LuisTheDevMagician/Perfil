@@ -3,10 +3,10 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSocket } from '@/lib/socket';
-import TrophyIcon from '@mui/icons-material/EmojiEvents';
+import { soundManager } from '@/lib/soundManager';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
-import StarIcon from '@mui/icons-material/Star';
 
 interface Player {
   id: string;
@@ -18,40 +18,40 @@ function getInitialData() {
   if (typeof window === 'undefined') {
     return { ranking: [], isHost: false };
   }
-  
   const rankingData = localStorage.getItem('perfil_ranking');
   localStorage.removeItem('perfil_ranking');
   const ranking: Player[] = rankingData ? JSON.parse(rankingData) : [];
-  
   const hostData = localStorage.getItem('perfil_isHost');
   localStorage.removeItem('perfil_isHost');
   const isHost = hostData === 'true';
-  
   return { ranking, isHost };
 }
 
 function VictoryContent() {
   const router = useRouter();
-  
   const initialData = getInitialData();
   const [ranking] = useState<Player[]>(initialData.ranking);
   const [isHost] = useState(initialData.isHost);
 
   useEffect(() => {
+    soundManager.play('victoryScreenSound');
+  }, []);
+
+  useEffect(() => {
     const socket = getSocket();
-    
+
     socket.on('return-to-lobby', () => {
-      console.log('Recebido return-to-lobby, navegando para lobby...');
+      soundManager.stop('victoryScreenSound');
       localStorage.setItem('perfil_from_victory', 'true');
       router.replace('/lobby');
     });
-    
+
     socket.on('game-restarted', () => {
-      console.log('Recebido game-restarted, navegando para lobby...');
+      soundManager.stop('victoryScreenSound');
       localStorage.setItem('perfil_from_victory', 'true');
       router.replace('/lobby');
     });
-    
+
     return () => {
       socket.off('return-to-lobby');
       socket.off('game-restarted');
@@ -59,91 +59,123 @@ function VictoryContent() {
   }, [router]);
 
   const handlePlayAgain = () => {
+    soundManager.stop('victoryScreenSound');
     const socket = getSocket();
     socket.emit('restart-game');
   };
 
   const handleExitToLobby = () => {
+    soundManager.stop('victoryScreenSound');
     const socket = getSocket();
     socket.emit('exit-victory-screen');
   };
 
   const winner = ranking[0];
+  const medals = ['🥇', '🥈', '🥉'];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-400 via-orange-500 to-red-500 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
-        <div className="flex justify-center mb-4">
-          <TrophyIcon sx={{ fontSize: 80, color: '#FFD700' }} />
-        </div>
-        
-        <h1 className="text-4xl font-bold text-gray-800 mb-2">Fim de Jogo!</h1>
-        
-        {winner && (
-          <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl p-4 mb-6">
-            <p className="text-white text-lg mb-1">🏆 Vencedor</p>
-            <p className="text-yellow-300 text-2xl font-bold">{winner.name}</p>
-            <p className="text-white text-lg">{winner.score} pontos</p>
-          </div>
-        )}
+    <>
+      <style>{`
+        @keyframes trophy-glow {
+          0%, 100% { filter: drop-shadow(0 0 14px rgba(251,191,36,0.55)); }
+          50%       { filter: drop-shadow(0 0 28px rgba(251,191,36,0.85)) drop-shadow(0 0 56px rgba(249,115,22,0.35)); }
+        }
+        .trophy-anim { animation: trophy-glow 2.5s ease-in-out infinite; }
+      `}</style>
 
-        <div className="bg-gray-50 rounded-xl p-4 mb-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-3 flex items-center justify-center gap-2">
-            <StarIcon className="text-yellow-500" /> Ranking Final
-          </h2>
-          <div className="space-y-2">
+      <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0"
+          style={{ background: 'radial-gradient(ellipse at 50% 25%, rgba(251,191,36,0.1) 0%, rgba(249,115,22,0.06) 45%, transparent 70%)' }} />
+
+        <div className="glass rounded-3xl p-8 max-w-md w-full relative z-10 text-center">
+          <div className="trophy-anim mb-3 flex justify-center">
+            <EmojiEventsIcon sx={{ fontSize: 68, color: '#FBBF24' }} />
+          </div>
+
+          <h1 className="mb-6"
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 'clamp(42px,10vw,66px)',
+              letterSpacing: '0.06em',
+              lineHeight: 1,
+              background: 'linear-gradient(135deg, #FBBF24, #F97316)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}>
+            Fim de Jogo!
+          </h1>
+
+          {winner && (
+            <div className="rounded-2xl p-4 mb-5"
+              style={{
+                background: 'linear-gradient(135deg, rgba(124,58,237,0.2), rgba(236,72,153,0.12))',
+                border: '1px solid rgba(196,181,253,0.2)',
+              }}>
+              <p className="text-xs tracking-widest uppercase mb-1" style={{ color: 'rgba(255,255,255,0.45)' }}>Vencedor</p>
+              <p className="font-bold text-2xl" style={{ color: '#C4B5FD' }}>{winner.name}</p>
+              <p style={{ color: 'rgba(255,255,255,0.55)' }}>{winner.score} pontos</p>
+            </div>
+          )}
+
+          <div className="rounded-2xl p-4 mb-5 space-y-2"
+            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <h2 className="text-xs font-bold mb-3 tracking-widest uppercase"
+              style={{ color: 'rgba(255,255,255,0.4)' }}>
+              Ranking Final
+            </h2>
             {ranking.map((player, index) => (
-              <div 
-                key={player.id || index}
-                className={`flex items-center justify-between p-2 rounded-lg ${
-                  index === 0 ? 'bg-yellow-100 border-2 border-yellow-400' : 'bg-white border border-gray-200'
-                }`}
-              >
+              <div key={player.id || index}
+                className="flex items-center justify-between px-3 py-2 rounded-xl"
+                style={{
+                  background: index === 0 ? 'rgba(251,191,36,0.07)' : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${index === 0 ? 'rgba(251,191,36,0.18)' : 'rgba(255,255,255,0.05)'}`,
+                }}>
                 <div className="flex items-center gap-2">
-                  <span className={`font-bold ${index === 0 ? 'text-yellow-600' : 'text-gray-600'}`}>
-                    {index + 1}°
+                  <span>{medals[index] ?? `${index + 1}°`}</span>
+                  <span className="font-semibold"
+                    style={{ color: index === 0 ? '#FBBF24' : 'rgba(255,255,255,0.8)' }}>
+                    {player.name}
                   </span>
-                  <span className="font-semibold text-gray-800">{player.name}</span>
                 </div>
-                <span className="font-bold text-gray-700">{player.score} pts</span>
+                <span className="font-bold" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                  {player.score} pts
+                </span>
               </div>
             ))}
           </div>
-        </div>
 
-        {isHost ? (
-          <div className="space-y-3">
-            <button
-              onClick={handlePlayAgain}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg flex items-center justify-center gap-2"
-            >
-              <RefreshIcon /> Jogar Novamente
-            </button>
-            <button
-              onClick={handleExitToLobby}
-              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg flex items-center justify-center gap-2"
-            >
-              <ExitToAppIcon /> Sair para o Lobby
-            </button>
-          </div>
-        ) : (
-          <div className="bg-gray-100 rounded-lg p-4">
-            <p className="text-gray-600 font-medium">
-              Aguarde o host decidir o próximo passo...
-            </p>
-          </div>
-        )}
+          {isHost ? (
+            <div className="space-y-3">
+              <button onClick={handlePlayAgain}
+                className="w-full py-3 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all duration-200 hover:scale-[1.02] hover:brightness-110"
+                style={{ background: 'linear-gradient(135deg, #059669, #10B981)', boxShadow: '0 4px 16px rgba(16,185,129,0.22)' }}>
+                <RefreshIcon /> Jogar Novamente
+              </button>
+              <button onClick={handleExitToLobby}
+                className="w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-200 hover:scale-[1.02]"
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.75)' }}>
+                <ExitToAppIcon /> Voltar ao Lobby
+              </button>
+            </div>
+          ) : (
+            <div className="py-4 rounded-xl"
+              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <p style={{ color: 'rgba(255,255,255,0.4)' }}>Aguardando o host...</p>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
 export default function VictoryPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-yellow-400 via-orange-500 to-red-500 flex items-center justify-center">
-        <div className="bg-white p-8 rounded-2xl">
-          <p>Carregando...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="glass p-8 rounded-2xl">
+          <p style={{ color: 'rgba(255,255,255,0.45)' }}>Carregando...</p>
         </div>
       </div>
     }>

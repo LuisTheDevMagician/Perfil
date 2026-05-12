@@ -1,6 +1,6 @@
 # 🎮 Jogo Perfil - Quiz Multiplayer
 
-Jogo web multiplayer local estilo "Perfil" (jogo de adivinhação com dicas progressivas) com arquitetura escalável e separada em **Backend** (Elysia.js/Elyia-WS) e **Frontend** (Next.js). Suporta até 11 jogadores simultâneos em tempo real via rede local.
+Jogo web multiplayer local estilo "Perfil" (jogo de adivinhação com dicas progressivas) com arquitetura separada em **Backend** (Bun + Node HTTP + Socket.IO) e **Frontend** (Next.js). Suporta até 11 jogadores simultâneos em tempo real via rede local.
 
 ---
 
@@ -21,7 +21,7 @@ O **Jogo Perfil** é um quiz de adivinhação divertido e educacional onde:
 ## 🚀 Tecnologias Utilizadas
 
 - **Frontend**: Next.js 15+ (App Router), TypeScript, Tailwind CSS 4, Material UI / Icons.
-- **Backend**: Bun, Elysia.js, Elysia WebSocket.
+- **Backend**: Bun runtime, Node HTTP, Socket.IO.
 - **Gerenciador de Pacotes Oficial**: Bun.
 
 ---
@@ -86,8 +86,8 @@ A beleza do jogo é compartilhar as telas dos jogadores num ambiente interno ou 
 
 ## 🐛 Resolução de Problemas / Troubleshooting
 
-- **A tela fica em um ciclo "Aguardando Conexão... / Conectando" e não entra na Home:** O Backend Bun/Elysia desligou, resetou ou sofreu erro, cheque o console rodando em seu Terminal de Backend.
-- **Eu Consigo mas ninguém mais conecta:** O Firewall da máquina hospedeira rejeitou conexões na Porta 3000 ou 4000. Desative proteção ou crie Regra de Exceção de Tráfego de Entrada. 
+- **A tela fica em um ciclo "Aguardando Conexão... / Conectando" e não entra na Home:** O servidor Bun desligou, resetou ou sofreu erro, cheque o console rodando em seu Terminal de Backend.
+- **Eu Consigo mas ninguém mais conecta:** O Firewall da máquina hospedeira rejeitou conexões na Porta 3000 ou 3001. Desative proteção ou crie Regra de Exceção de Tráfego de Entrada. 
 
 ---
 

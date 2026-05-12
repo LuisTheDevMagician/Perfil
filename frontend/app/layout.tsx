@@ -1,20 +1,23 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Bebas_Neue, Nunito } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const bebas = Bebas_Neue({
+  weight: '400',
+  subsets: ['latin'],
+  variable: '--font-bebas',
+  display: 'swap',
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const nunito = Nunito({
+  subsets: ['latin'],
+  variable: '--font-nunito',
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
-  title: "Jogo Perfil - Quiz Multiplayer",
-  description: "Jogo de adivinhação estilo Perfil com até 11 jogadores",
+  title: "PerfilNextFox — Quiz Multiplayer",
+  description: "Jogo de adivinhação estilo Perfil com até 11 jogadores em tempo real",
 };
 
 export default function RootLayout({
@@ -23,10 +26,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+    <html lang="pt-BR" className={`${bebas.variable} ${nunito.variable}`}>
+      <body className="antialiased">
         {children}
       </body>
     </html>

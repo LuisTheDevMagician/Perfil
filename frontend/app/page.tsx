@@ -2,9 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import CasinoIcon from '@mui/icons-material/Casino';
-import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
-import SettingsIcon from '@mui/icons-material/Settings';
+import Image from 'next/image';
 
 export default function Home() {
   const router = useRouter();
@@ -20,53 +18,81 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
-        <h1 className="text-4xl font-bold text-center mb-2 text-gray-800">Jogo Perfil</h1>
-        <p className="text-center text-gray-600 mb-8">Quiz Multiplayer - Até 11 jogadores</p>
-        
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-0"
+        style={{ background: 'radial-gradient(ellipse at 50% 40%, rgba(124,58,237,0.18) 0%, rgba(236,72,153,0.08) 45%, transparent 70%)' }} />
+
+      <div className="glass rounded-3xl p-8 max-w-md w-full relative z-10">
+        <div className="text-center mb-8">
+          <Image
+            src="/logo.png"
+            alt="PerfilNextFox"
+            width={200}
+            height={200}
+            className="mx-auto mb-3"
+            style={{ filter: 'drop-shadow(0 0 22px rgba(124,58,237,0.55)) drop-shadow(0 0 8px rgba(236,72,153,0.3))' }}
+            priority
+          />
+          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem' }}>
+            Quiz Multiplayer · Até 11 jogadores
+          </p>
+        </div>
+
         <div className="space-y-4">
           <div>
-            <label htmlFor="playerName" className="block text-sm font-medium text-gray-700 mb-2">
-              Digite seu nome:
+            <label htmlFor="playerName" className="block text-sm font-semibold mb-2"
+              style={{ color: 'rgba(255,255,255,0.55)' }}>
+              Seu apelido
             </label>
             <input
               id="playerName"
               type="text"
               value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
+              onChange={(e) => { setPlayerName(e.target.value); setError(''); }}
               onKeyDown={(e) => e.key === 'Enter' && handleJoinLobby()}
-              placeholder="Seu apelido"
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none text-gray-800"
+              placeholder="Como quer ser chamado?"
               maxLength={20}
+              className="w-full px-4 py-3 rounded-xl font-medium outline-none transition-all duration-200"
+              style={{
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                color: '#fff',
+                fontSize: '1rem',
+              }}
+              onFocus={e => (e.target.style.borderColor = 'rgba(124,58,237,0.7)')}
+              onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')}
             />
           </div>
 
           {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">
+            <div className="px-4 py-3 rounded-xl text-sm font-medium"
+              style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#FCA5A5' }}>
               {error}
             </div>
           )}
 
           <button
             onClick={handleJoinLobby}
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg"
-          >
-            Entrar no Lobby
+            className="w-full py-3 rounded-xl font-bold text-white transition-all duration-200 hover:scale-[1.02] hover:brightness-110 active:scale-[0.98]"
+            style={{
+              background: 'linear-gradient(135deg, #7C3AED, #EC4899)',
+              boxShadow: '0 4px 20px rgba(124,58,237,0.35)',
+            }}>
+            Entrar no Lobby →
           </button>
         </div>
 
-        <div className="mt-6 text-center text-sm text-gray-600">
-          <p><CasinoIcon /> Primeiro jogador será o HOST</p>
-          <p><EmojiEventsIcon /> Acesse em outros dispositivos na mesma rede</p>
-          <p className="mt-2">
-            <button 
-              onClick={() => router.push('/admin')} 
-              className="text-gray-600 hover:text-purple-600 underline cursor-pointer bg-transparent border-none p-0 text-sm"
-            >
-              <SettingsIcon className="mr-1" /> Área do Administrador
-            </button>
-          </p>
+        <div className="mt-6 flex justify-center gap-5 text-sm"
+          style={{ color: 'rgba(255,255,255,0.28)' }}>
+          <button onClick={() => router.push('/admin')}
+            className="hover:text-white transition-colors duration-200">
+            Administrador
+          </button>
+          <span>·</span>
+          <button onClick={() => router.push('/sobre')}
+            className="hover:text-white transition-colors duration-200">
+            Sobre o Jogo
+          </button>
         </div>
       </div>
     </div>

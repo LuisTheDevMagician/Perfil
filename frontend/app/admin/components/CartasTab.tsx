@@ -1,7 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, IconButton, TextField, Dialog, DialogTitle, DialogContent, DialogActions, Box, Typography, Select, MenuItem, FormControl, InputLabel, Grid } from '@mui/material';
+import {
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
+  Button, IconButton, TextField, Dialog, DialogTitle, DialogContent, DialogActions,
+  Box, Typography, Select, MenuItem, FormControl, InputLabel,
+} from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
@@ -47,12 +51,12 @@ export function CartasTab() {
     const [cartasRes, temasRes, discRes] = await Promise.all([
       fetch(`${API_URL}/cartas`),
       fetch(`${API_URL}/temas`),
-      fetch(`${API_URL}/disciplinas`)
+      fetch(`${API_URL}/disciplinas`),
     ]);
     const cartasData = await cartasRes.json();
     setCartas(cartasData.map((c: any) => ({
       ...c,
-      dicas: typeof c.dicas === 'string' ? c.dicas : JSON.stringify(c.dicas || [])
+      dicas: typeof c.dicas === 'string' ? c.dicas : JSON.stringify(c.dicas || []),
     })));
     setTemas(await temasRes.json());
     setDisciplinas(await discRes.json());
@@ -90,24 +94,15 @@ export function CartasTab() {
   };
 
   const handleSalvar = async () => {
-    if (!nome.trim()) {
-      alert('Nome é obrigatório');
-      return;
-    }
-    if (!temaId) {
-      alert('Tema é obrigatório');
-      return;
-    }
-    if (dicas.some(d => !d.trim())) {
-      alert('Todas as 10 dicas devem ser preenchidas');
-      return;
-    }
+    if (!nome.trim()) { alert('Nome é obrigatório'); return; }
+    if (!temaId) { alert('Tema é obrigatório'); return; }
+    if (dicas.some(d => !d.trim())) { alert('Todas as 10 dicas devem ser preenchidas'); return; }
     const method = editando ? 'PUT' : 'POST';
     const url = editando ? `${API_URL}/cartas/${editando.id}` : `${API_URL}/cartas`;
     const res = await fetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome, temaId, dicas })
+      body: JSON.stringify({ nome, temaId, dicas }),
     });
     if (res.ok) {
       setOpen(false);
@@ -128,47 +123,53 @@ export function CartasTab() {
   return (
     <Box>
       <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h5" sx={{ color: '#000000' }}>Gerenciar Cartas</Typography>
-        <Button 
-          variant="contained" 
-          startIcon={<AddIcon />} 
+        <Typography variant="h6" sx={{ fontFamily: 'var(--font-display)', letterSpacing: '0.06em', color: 'rgba(255,255,255,0.9)', fontSize: '1.25rem' }}>
+          Gerenciar Cartas
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
           onClick={() => handleAbrirEditor()}
-          sx={{ bgcolor: '#9333EA', '&:hover': { bgcolor: '#7e22ce' } }}
+          sx={{ bgcolor: '#7C3AED', '&:hover': { bgcolor: '#6D28D9' } }}
         >
           Nova Carta
         </Button>
       </Box>
-      <TableContainer component={Paper}>
+
+      <TableContainer component={Paper} sx={{ bgcolor: 'rgba(14,14,26,0.95)', border: '1px solid rgba(255,255,255,0.07)' }}>
         <Table>
           <TableHead>
-            <TableRow sx={{ bgcolor: '#f5f5f5' }}>
-              <TableCell><strong>ID</strong></TableCell>
-              <TableCell><strong>Nome</strong></TableCell>
-              <TableCell><strong>Tema</strong></TableCell>
-              <TableCell><strong>Disciplina</strong></TableCell>
-              <TableCell align="right"><strong>Ações</strong></TableCell>
+            <TableRow sx={{ bgcolor: 'rgba(255,255,255,0.03)' }}>
+              {['ID', 'Nome', 'Tema', 'Disciplina'].map((h) => (
+                <TableCell key={h} sx={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, borderColor: 'rgba(255,255,255,0.07)' }}>
+                  {h}
+                </TableCell>
+              ))}
+              <TableCell align="right" sx={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, borderColor: 'rgba(255,255,255,0.07)' }}>
+                Ações
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {cartas.map((c) => (
-              <TableRow key={c.id}>
-                <TableCell>{c.id}</TableCell>
-                <TableCell>{c.nome}</TableCell>
-                <TableCell>{c.tema_nome}</TableCell>
-                <TableCell>{c.disciplina_nome}</TableCell>
-                <TableCell align="right">
-                  <IconButton onClick={() => handleAbrirEditor(c)}>
-                    <EditIcon />
+              <TableRow key={c.id} sx={{ '&:hover': { bgcolor: 'rgba(255,255,255,0.02)' } }}>
+                <TableCell sx={{ color: 'rgba(255,255,255,0.4)', borderColor: 'rgba(255,255,255,0.05)' }}>{c.id}</TableCell>
+                <TableCell sx={{ color: 'rgba(255,255,255,0.85)', borderColor: 'rgba(255,255,255,0.05)' }}>{c.nome}</TableCell>
+                <TableCell sx={{ color: 'rgba(255,255,255,0.55)', borderColor: 'rgba(255,255,255,0.05)' }}>{c.tema_nome}</TableCell>
+                <TableCell sx={{ color: 'rgba(255,255,255,0.55)', borderColor: 'rgba(255,255,255,0.05)' }}>{c.disciplina_nome}</TableCell>
+                <TableCell align="right" sx={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+                  <IconButton onClick={() => handleAbrirEditor(c)} sx={{ color: 'rgba(255,255,255,0.5)', '&:hover': { color: '#C4B5FD' } }}>
+                    <EditIcon fontSize="small" />
                   </IconButton>
-                  <IconButton onClick={() => handleExcluir(c.id)} color="error">
-                    <DeleteIcon />
+                  <IconButton onClick={() => handleExcluir(c.id)} sx={{ color: 'rgba(255,255,255,0.5)', '&:hover': { color: '#EF4444' } }}>
+                    <DeleteIcon fontSize="small" />
                   </IconButton>
                 </TableCell>
               </TableRow>
             ))}
             {cartas.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                <TableCell colSpan={5} align="center" sx={{ py: 4, color: 'rgba(255,255,255,0.25)', borderColor: 'rgba(255,255,255,0.05)' }}>
                   Nenhuma carta encontrada
                 </TableCell>
               </TableRow>
@@ -176,18 +177,23 @@ export function CartasTab() {
           </TableBody>
         </Table>
       </TableContainer>
+
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>{editando ? 'Editar' : 'Nova'} Carta (10 dicas obrigatórias)</DialogTitle>
-        <DialogContent>
-          <Box sx={{ mt: 1 }}>
+        <DialogTitle sx={{ color: 'rgba(255,255,255,0.9)', borderBottom: '1px solid rgba(255,255,255,0.07)', pb: 2 }}>
+          {editando ? 'Editar' : 'Nova'} Carta
+          <Typography variant="caption" sx={{ display: 'block', color: 'rgba(255,255,255,0.35)', mt: 0.5 }}>
+            10 dicas obrigatórias
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ pt: '16px !important' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField
               fullWidth
               label="Nome da Carta"
               value={nome}
               onChange={(e) => setNome(e.target.value)}
-              sx={{ mb: 2 }}
             />
-            <FormControl fullWidth sx={{ mb: 2 }}>
+            <FormControl fullWidth>
               <InputLabel>Disciplina</InputLabel>
               <Select
                 value={disciplinaId}
@@ -199,7 +205,7 @@ export function CartasTab() {
                 ))}
               </Select>
             </FormControl>
-            <FormControl fullWidth sx={{ mb: 2 }}>
+            <FormControl fullWidth>
               <InputLabel>Tema</InputLabel>
               <Select
                 value={temaId}
@@ -212,8 +218,11 @@ export function CartasTab() {
                 ))}
               </Select>
             </FormControl>
-            <Typography variant="h6" sx={{ mb: 1 }}>10 Dicas:</Typography>
-            <div className="space-y-2">
+
+            <Typography variant="overline" sx={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.12em', mt: 1 }}>
+              10 Dicas
+            </Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
               {dicas.map((dica, index) => (
                 <TextField
                   key={index}
@@ -228,12 +237,12 @@ export function CartasTab() {
                   size="small"
                 />
               ))}
-            </div>
+            </Box>
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpen(false)}>Cancelar</Button>
-          <Button onClick={handleSalvar} variant="contained" sx={{ bgcolor: '#9333EA' }}>Salvar</Button>
+        <DialogActions sx={{ borderTop: '1px solid rgba(255,255,255,0.07)', px: 3, py: 2 }}>
+          <Button onClick={() => setOpen(false)} sx={{ color: 'rgba(255,255,255,0.5)' }}>Cancelar</Button>
+          <Button onClick={handleSalvar} variant="contained" sx={{ bgcolor: '#7C3AED', '&:hover': { bgcolor: '#6D28D9' } }}>Salvar</Button>
         </DialogActions>
       </Dialog>
     </Box>

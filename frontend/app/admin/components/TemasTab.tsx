@@ -1,7 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, IconButton, TextField, Dialog, DialogTitle, DialogContent, DialogActions, Box, Typography, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import {
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
+  Button, IconButton, TextField, Dialog, DialogTitle, DialogContent, DialogActions,
+  Box, Typography, Select, MenuItem, FormControl, InputLabel,
+} from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
@@ -31,7 +35,7 @@ export function TemasTab() {
   const fetchData = async () => {
     const [temasRes, discRes] = await Promise.all([
       fetch(`${API_URL}/temas`),
-      fetch(`${API_URL}/disciplinas`)
+      fetch(`${API_URL}/disciplinas`),
     ]);
     setTemas(await temasRes.json());
     setDisciplinas(await discRes.json());
@@ -47,7 +51,7 @@ export function TemasTab() {
     await fetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome, disciplinaId })
+      body: JSON.stringify({ nome, disciplinaId }),
     });
     setOpen(false);
     setNome('');
@@ -73,45 +77,52 @@ export function TemasTab() {
   return (
     <Box>
       <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h5" sx={{ color: '#000000' }}>Gerenciar Temas</Typography>
-        <Button 
-          variant="contained" 
-          startIcon={<AddIcon />} 
+        <Typography variant="h6" sx={{ fontFamily: 'var(--font-display)', letterSpacing: '0.06em', color: 'rgba(255,255,255,0.9)', fontSize: '1.25rem' }}>
+          Gerenciar Temas
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
           onClick={abrirNovo}
-          sx={{ bgcolor: '#9333EA', '&:hover': { bgcolor: '#7e22ce' } }}
+          sx={{ bgcolor: '#7C3AED', '&:hover': { bgcolor: '#6D28D9' } }}
         >
           Novo Tema
         </Button>
       </Box>
-      <TableContainer component={Paper}>
+
+      <TableContainer component={Paper} sx={{ bgcolor: 'rgba(14,14,26,0.95)', border: '1px solid rgba(255,255,255,0.07)' }}>
         <Table>
           <TableHead>
-            <TableRow sx={{ bgcolor: '#f5f5f5' }}>
-              <TableCell><strong>ID</strong></TableCell>
-              <TableCell><strong>Nome</strong></TableCell>
-              <TableCell><strong>Disciplina</strong></TableCell>
-              <TableCell align="right"><strong>Ações</strong></TableCell>
+            <TableRow sx={{ bgcolor: 'rgba(255,255,255,0.03)' }}>
+              {['ID', 'Nome', 'Disciplina'].map((h) => (
+                <TableCell key={h} sx={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, borderColor: 'rgba(255,255,255,0.07)' }}>
+                  {h}
+                </TableCell>
+              ))}
+              <TableCell align="right" sx={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, borderColor: 'rgba(255,255,255,0.07)' }}>
+                Ações
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {temas.map((t) => (
-              <TableRow key={t.id}>
-                <TableCell>{t.id}</TableCell>
-                <TableCell>{t.nome}</TableCell>
-                <TableCell>{t.disciplina_nome}</TableCell>
-                <TableCell align="right">
-                  <IconButton onClick={() => { setEditando(t); setNome(t.nome); setDisciplinaId(t.disciplina_id); setOpen(true); }}>
-                    <EditIcon />
+              <TableRow key={t.id} sx={{ '&:hover': { bgcolor: 'rgba(255,255,255,0.02)' } }}>
+                <TableCell sx={{ color: 'rgba(255,255,255,0.4)', borderColor: 'rgba(255,255,255,0.05)' }}>{t.id}</TableCell>
+                <TableCell sx={{ color: 'rgba(255,255,255,0.85)', borderColor: 'rgba(255,255,255,0.05)' }}>{t.nome}</TableCell>
+                <TableCell sx={{ color: 'rgba(255,255,255,0.55)', borderColor: 'rgba(255,255,255,0.05)' }}>{t.disciplina_nome}</TableCell>
+                <TableCell align="right" sx={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+                  <IconButton onClick={() => { setEditando(t); setNome(t.nome); setDisciplinaId(t.disciplina_id); setOpen(true); }} sx={{ color: 'rgba(255,255,255,0.5)', '&:hover': { color: '#C4B5FD' } }}>
+                    <EditIcon fontSize="small" />
                   </IconButton>
-                  <IconButton onClick={() => handleExcluir(t.id)} color="error">
-                    <DeleteIcon />
+                  <IconButton onClick={() => handleExcluir(t.id)} sx={{ color: 'rgba(255,255,255,0.5)', '&:hover': { color: '#EF4444' } }}>
+                    <DeleteIcon fontSize="small" />
                   </IconButton>
                 </TableCell>
               </TableRow>
             ))}
             {temas.length === 0 && (
               <TableRow>
-                <TableCell colSpan={4} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                <TableCell colSpan={4} align="center" sx={{ py: 4, color: 'rgba(255,255,255,0.25)', borderColor: 'rgba(255,255,255,0.05)' }}>
                   Nenhum tema encontrado
                 </TableCell>
               </TableRow>
@@ -119,16 +130,19 @@ export function TemasTab() {
           </TableBody>
         </Table>
       </TableContainer>
+
       <Dialog open={open} onClose={() => setOpen(false)}>
-        <DialogTitle>{editando ? 'Editar' : 'Novo'} Tema</DialogTitle>
-        <DialogContent>
+        <DialogTitle sx={{ color: 'rgba(255,255,255,0.9)', borderBottom: '1px solid rgba(255,255,255,0.07)', pb: 2 }}>
+          {editando ? 'Editar' : 'Novo'} Tema
+        </DialogTitle>
+        <DialogContent sx={{ pt: '16px !important' }}>
           <TextField
             autoFocus
             fullWidth
             label="Nome"
             value={nome}
             onChange={(e) => setNome(e.target.value)}
-            sx={{ mt: 1, mb: 2 }}
+            sx={{ mb: 2 }}
           />
           <FormControl fullWidth>
             <InputLabel>Disciplina</InputLabel>
@@ -143,9 +157,9 @@ export function TemasTab() {
             </Select>
           </FormControl>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpen(false)}>Cancelar</Button>
-          <Button onClick={handleSalvar} variant="contained" sx={{ bgcolor: '#9333EA' }}>Salvar</Button>
+        <DialogActions sx={{ borderTop: '1px solid rgba(255,255,255,0.07)', px: 3, py: 2 }}>
+          <Button onClick={() => setOpen(false)} sx={{ color: 'rgba(255,255,255,0.5)' }}>Cancelar</Button>
+          <Button onClick={handleSalvar} variant="contained" sx={{ bgcolor: '#7C3AED', '&:hover': { bgcolor: '#6D28D9' } }}>Salvar</Button>
         </DialogActions>
       </Dialog>
     </Box>
