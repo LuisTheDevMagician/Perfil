@@ -5,7 +5,14 @@ function getOrCreateSessionId(): string {
   const KEY = 'perfil_session_id';
   let id = localStorage.getItem(KEY);
   if (!id) {
-    id = crypto.randomUUID();
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      id = crypto.randomUUID();
+    } else {
+      id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+        const r = Math.random() * 16 | 0;
+        return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+      });
+    }
     localStorage.setItem(KEY, id);
   }
   return id;

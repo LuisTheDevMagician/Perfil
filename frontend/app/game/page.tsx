@@ -136,6 +136,8 @@ export default function GamePage() {
       setErrorPlayerName(playerName);
       setErrorAnswer(answer || '');
       setShowErrorAnswer(true);
+      // Turno permanece com o mesmo jogador, libera o input para nova tentativa
+      setHasAnswered(false);
       setTimeout(() => { setShowErrorAnswer(false); setErrorPlayerName(''); setErrorAnswer(''); }, 3000);
     };
 
@@ -427,7 +429,9 @@ export default function GamePage() {
             <CancelIcon style={{ color: '#FCA5A5', fontSize: 48 }} />
             <h2 className="text-2xl font-bold mt-3 mb-2" style={{ color: '#FCA5A5' }}>ERRADO!</h2>
             <p style={{ color: 'rgba(255,255,255,0.7)' }}><strong style={{ color: '#fff' }}>{errorPlayerName}</strong> errou</p>
-            <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.4)' }}>&quot;{errorAnswer}&quot;</p>
+            <p className="text-sm mt-2" style={{ color: 'rgba(255,255,255,0.55)' }}>
+              Resposta do jogador: <span className="font-bold" style={{ color: '#FCA5A5' }}>{errorAnswer}</span>
+            </p>
           </Modal>
         )}
 
@@ -585,7 +589,7 @@ export default function GamePage() {
                 value={playerAnswer}
                 onChange={(e) => setPlayerAnswer(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSubmitAnswer()}
-                placeholder={!isMyTurn ? 'Não é sua vez' : hasAnswered ? 'Você já respondeu' : 'Digite sua resposta...'}
+                placeholder={!isMyTurn ? 'Não é sua vez' : hasAnswered ? 'Aguardando validação...' : 'Digite sua resposta...'}
                 disabled={showCorrectAnswer || hasAnswered || !isMyTurn}
                 className="w-full px-4 py-3 rounded-xl outline-none transition-all duration-200 disabled:opacity-50"
                 style={{
@@ -626,7 +630,9 @@ export default function GamePage() {
           <CancelIcon style={{ color: '#FCA5A5', fontSize: 48 }} />
           <h2 className="text-2xl font-bold mt-3 mb-2" style={{ color: '#FCA5A5' }}>ERRADO!</h2>
           <p style={{ color: 'rgba(255,255,255,0.7)' }}><strong style={{ color: '#fff' }}>{errorPlayerName}</strong> errou</p>
-          <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.4)' }}>&quot;{errorAnswer}&quot;</p>
+          <p className="text-sm mt-2" style={{ color: 'rgba(255,255,255,0.55)' }}>
+            Resposta do jogador: <span className="font-bold" style={{ color: '#FCA5A5' }}>{errorAnswer}</span>
+          </p>
           <p className="text-xs mt-2" style={{ color: 'rgba(255,255,255,0.3)' }}>Vez do próximo jogador</p>
         </Modal>
       )}
