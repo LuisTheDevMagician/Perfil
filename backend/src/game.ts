@@ -488,6 +488,21 @@ export class GerenciadorJogo {
     return this.jogoEncerrado;
   }
 
+  getIndiceCartaAtual(): number {
+    return this.sessaoAtual?.id_carta_atual ?? 0;
+  }
+
+  getTotalCartas(): number {
+    if (!this.sessaoAtual) return 0;
+    const temaId = this.sessaoAtual.tema_id;
+    if (temaId) {
+      return queries.buscarCartasPorTema(temaId).length;
+    }
+    const todas = queries.buscarTodasCartas();
+    if (todas.length > 0) return todas.length;
+    return ((require('./models') as any).gameCards as any[]).length;
+  }
+
   getCartaAtual(): Carta | null {
     if (!this.sessaoAtual) return null;
     

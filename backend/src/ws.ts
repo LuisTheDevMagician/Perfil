@@ -80,6 +80,13 @@ function handleJoinLobby(socketId: string, data: any) {
   }
 }
 
+function getCardCounter() {
+  return {
+    currentCardIndex: gerenciadorJogo.getIndiceCartaAtual(),
+    totalCards: gerenciadorJogo.getTotalCartas(),
+  };
+}
+
 function handleRequestGameState(socketId: string) {
   try {
     if (gerenciadorJogo.getJogoEncerrado()) {
@@ -98,6 +105,7 @@ function handleRequestGameState(socketId: string) {
         currentPlayerIndex: getIndiceJogadorTurno(),
         currentPlayerId: getIdJogadorTurno(),
         players: gerenciadorJogo.getJogadores(getActiveSocketIds()).map(mapJogadorParaFrontend),
+        ...getCardCounter(),
       });
       sendTo(socketId, 'clue-revealed', {
         revealedClueIndices: gerenciadorJogo.getDicasReveladas(),
@@ -173,6 +181,7 @@ function handleStartGame(socketId: string) {
       currentPlayerIndex: getIndiceJogadorTurno(),
       currentPlayerId: getIdJogadorTurno(),
       players: gerenciadorJogo.getJogadores(getActiveSocketIds()).map(mapJogadorParaFrontend),
+      ...getCardCounter(),
     });
   } catch (e: any) {
     console.error('Erro em start-game:', e.message);
@@ -286,6 +295,7 @@ function handleValidateAnswer(socketId: string, data: any) {
               currentPlayerIndex: getIndiceJogadorTurno(),
               currentPlayerId: getIdJogadorTurno(),
               players: gerenciadorJogo.getJogadores(getActiveSocketIds()).map(mapJogadorParaFrontend),
+              ...getCardCounter(),
             });
           }
         }, 3000);
@@ -333,6 +343,7 @@ function handleRevealAnswer(socketId: string) {
             currentCard: nextCard,
             currentPlayerIndex: getIndiceJogadorTurno(),
             currentPlayerId: getIdJogadorTurno(),
+            ...getCardCounter(),
           });
         }
       }, 3000);

@@ -61,6 +61,8 @@ export default function GamePage() {
   const [hasAnswered, setHasAnswered] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentPlayerId, setCurrentPlayerId] = useState<string>('');
+  const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  const [totalCards, setTotalCards] = useState(0);
   const isRevealingRef = useRef(false);
   const revealedCluesCountRef = useRef(0);
 
@@ -76,11 +78,13 @@ export default function GamePage() {
       socket.emit('request-game-state');
     };
 
-    const handleGameStarted = ({ currentCard: card, currentPlayerIndex: index, currentPlayerId: playerId, players: gamePlayers }: { currentCard: Card, currentPlayerIndex: number, currentPlayerId: string, players: Player[] }) => {
+    const handleGameStarted = ({ currentCard: card, currentPlayerIndex: index, currentPlayerId: playerId, players: gamePlayers, currentCardIndex: cardIdx, totalCards: total }: { currentCard: Card, currentPlayerIndex: number, currentPlayerId: string, players: Player[], currentCardIndex?: number, totalCards?: number }) => {
       revealedCluesCountRef.current = 0;
       setCurrentCard(card);
       setCurrentPlayerIndex(index);
       setCurrentPlayerId(playerId);
+      if (cardIdx !== undefined) setCurrentCardIndex(cardIdx);
+      if (total !== undefined) setTotalCards(total);
       const deduplicated = gamePlayers.filter((p, i, arr) => arr.findIndex(x => x.name === p.name) === i);
       setPlayers(deduplicated);
       setShowCorrectAnswer(false);
@@ -141,11 +145,13 @@ export default function GamePage() {
       setTimeout(() => { setShowErrorAnswer(false); setErrorPlayerName(''); setErrorAnswer(''); }, 3000);
     };
 
-    const handleNextCard = ({ currentCard: card, currentPlayerIndex: index, currentPlayerId: playerId, players: updatedPlayers }: { currentCard: Card, currentPlayerIndex: number, currentPlayerId: string, players?: Player[] }) => {
+    const handleNextCard = ({ currentCard: card, currentPlayerIndex: index, currentPlayerId: playerId, players: updatedPlayers, currentCardIndex: cardIdx, totalCards: total }: { currentCard: Card, currentPlayerIndex: number, currentPlayerId: string, players?: Player[], currentCardIndex?: number, totalCards?: number }) => {
       revealedCluesCountRef.current = 0;
       setCurrentCard(card);
       setCurrentPlayerIndex(index);
       setCurrentPlayerId(playerId);
+      if (cardIdx !== undefined) setCurrentCardIndex(cardIdx);
+      if (total !== undefined) setTotalCards(total);
       if (updatedPlayers) setPlayers(updatedPlayers.filter((p, i, arr) => arr.findIndex(x => x.name === p.name) === i));
       setRevealedClueIndices([]);
       setShowCorrectAnswer(false);
@@ -296,6 +302,17 @@ export default function GamePage() {
             </div>
           </div>
 
+          {/* Card counter */}
+          {totalCards > 0 && (
+            <div className="panel rounded-2xl px-5 py-2.5 flex items-center justify-center gap-3">
+              <span className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>Progresso:</span>
+              <span className="font-bold" style={{ color: '#C4B5FD' }}>Carta {currentCardIndex + 1} de {totalCards}</span>
+              <div className="flex-1 max-w-xs h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+                <div className="h-full rounded-full transition-all duration-500" style={{ width: `${((currentCardIndex + 1) / totalCards) * 100}%`, background: 'linear-gradient(90deg, #7C3AED, #C4B5FD)' }} />
+              </div>
+            </div>
+          )}
+
           <div className="grid md:grid-cols-2 gap-4">
 
             {/* Left: full card */}
@@ -346,9 +363,8 @@ export default function GamePage() {
                   <StarIcon fontSize="inherit" className="mr-1" />Mestre da Partida
                 </p>
                 {players.filter(p => p.isHost).map((host) => (
-                  <div key={host.id} className="flex justify-between items-center">
+                  <div key={host.id} className="flex items-center">
                     <span className="font-bold" style={{ color: '#FBBF24' }}>{host.name}</span>
-                    <span className="font-bold" style={{ color: 'rgba(255,255,255,0.6)' }}>{host.score} pts</span>
                   </div>
                 ))}
               </div>
@@ -461,7 +477,7 @@ export default function GamePage() {
             <p className="font-bold" style={{ color: 'rgba(255,255,255,0.85)' }}>{currentPlayer?.name}</p>
           </div>
           {isMyTurn && (
-            <span className="flex items-center gap-1.5 px-4 py-1.5 rounded-full font-bold text-sm"
+            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-sm"
               style={{ background: 'rgba(234,179,8,0.15)', border: '1px solid rgba(234,179,8,0.35)', color: '#FDE68A' }}>
               <WhatshotIcon fontSize="small" /> É sua vez!
             </span>
@@ -474,6 +490,17 @@ export default function GamePage() {
           </div>
         </div>
 
+        {/* Card counter */}
+        {totalCards > 0 && (
+          <div className="panel rounded-2xl px-5 py-2.5 flex items-center justify-center gap-3">
+            <span className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>Progresso:</span>
+            <span className="font-bold" style={{ color: '#C4B5FD' }}>Carta {currentCardIndex + 1} de {totalCards}</span>
+            <div className="flex-1 max-w-xs h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${((currentCardIndex + 1) / totalCards) * 100}%`, background: 'linear-gradient(90deg, #7C3AED, #C4B5FD)' }} />
+            </div>
+          </div>
+        )}
+
         <div className="grid md:grid-cols-3 gap-4">
 
           {/* Left: score column */}
@@ -484,9 +511,8 @@ export default function GamePage() {
                 <StarIcon fontSize="inherit" className="mr-1" />Mestre
               </p>
               {players.filter(p => p.isHost).map((host) => (
-                <div key={host.id} className="flex justify-between">
+                <div key={host.id}>
                   <span className="font-bold text-sm" style={{ color: '#FBBF24' }}>{host.name}</span>
-                  <span className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>{host.score}</span>
                 </div>
               ))}
             </div>
